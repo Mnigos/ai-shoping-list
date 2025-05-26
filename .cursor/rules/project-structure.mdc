@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Structure
+
+app/ - All the page files, layouts, metadata etc.
+lib/ - All the library code fe. prisma client, auth client etc.
+utils/ - All the utilities used across repository
+public/ - Directory for public assets fe. images
+components/ - All the react components
+hooks/ - All react hooks used across repository
+providers/ - All react providers used in application

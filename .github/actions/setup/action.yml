@@ -1,0 +1,18 @@
+name: 'Setup Node Env, Get & Cache Dependencies'
+description: 'Setup Node Env, Get & Cache Dependencies(via yarn) for faster builds'
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        run_install: false
+
+    - name: Setup node env 🏗
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+
+    - name: Install Dependencies 👨🏻‍💻
+      run: bun install --no-frozen-lockfile
+      shell: bash

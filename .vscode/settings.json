@@ -1,0 +1,33 @@
+{
+	"editor.tabSize": 2,
+	"editor.formatOnSave": true,
+	"editor.defaultFormatter": "biomejs.biome",
+	"explorer.fileNesting.enabled": true,
+	"explorer.fileNesting.patterns": {
+		"*.ts": "$(capture).js, $(capture).*.ts, $(capture).*.js",
+		"*.js": "$(capture).js.map, $(capture).*.ts, $(capture).*.js",
+		"tsconfig.json": "tsconfig.*.json",
+		"Dockerfile": "docker-compose.yml, .dockerignore",
+		".env": "*.env",
+		"package.json": "pnpm-lock.yaml, .nvmrc, pnpm-workspace.yaml, .npmrc, bun.lockb",
+		".gitignore": ".gitattributes",
+		"vitest.config.ts": "vitest.d.ts"
+	},
+	"javascript.updateImportsOnFileMove.enabled": "always",
+	"typescript.updateImportsOnFileMove.enabled": "always",
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"typescript.enablePromptUseWorkspaceTsdk": true,
+	"workbench.editor.tabSizing": "shrink",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "never",
+		"source.fixAll.prettier": "never",
+		"source.fixAll.biome": "always",
+		"source.fixAll.markdownlint": "explicit",
+		"source.organizeImports.biome": "always"
+	},
+	"material-icon-theme.activeIconPack": "nest",
+	"files.eol": "\n",
+	"files.associations": {
+		"*.css": "tailwindcss"
+	}
+}

@@ -1,0 +1,20 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Global rules
+
+- When generating new code always refer to already created project structure and follow simmilar coding rules to existing pieces.
+- Favor elegant, maintainable solutions over verbose code. Assume understanding of language idioms and design patterns.
+- Highlight potential performance implications and optimization opportunities in suggested code.
+- Frame solutions within broader architectural contexts and suggest design alternatives when appropriate.
+- Focus comments on 'why' not 'what' - assume code readability through well-named functions and variables.
+- Proactively address edge cases, race conditions, and security considerations without being prompted.
+- When debugging, provide targeted diagnostic approaches rather than shotgun solutions.
+- Suggest comprehensive testing strategies rather than just example tests, including considerations for mocking, test organization, and coverage.
+- When making changes always remove unnecesary imports
+- Always check linter errors
+- Prefer using `function` instead of arrow function where possible
+- When adding new UI components always format them according to [creating-components.mdc](mdc:.cursor/rules/creating-components.mdc)
+- Prefer interfaces over types whenever possible

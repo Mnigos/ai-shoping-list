@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Using terminal commands
+
+- Always try to use existing script in [package.json](mdc:package.json) instead of using custom if this command exists in [package.json](mdc:package.json)

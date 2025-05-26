@@ -1,0 +1,11 @@
+---
+description: 
+globs: *.tsx
+alwaysApply: false
+---
+# Creating components
+
+- Always wrap components in Readonly
+- Do not use `React` namespace, just use named export fe. use `ReactNode` instead of `React.ReactNode`
+- Always use `PropsWithChildren` react type util when declaring children prop.
+- Prefer inline export instead of exporting at the end of the file.

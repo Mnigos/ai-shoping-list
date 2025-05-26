@@ -1,0 +1,31 @@
+{
+	"$schema": "https://turborepo.com/schema.json",
+	"tasks": {
+		"build": {
+			"env": [
+				"DATABASE_URL",
+				"BETTER_AUTH_SECRET",
+				"BETTER_AUTH_URL",
+				"VERCEL_URL",
+				"DIRECT_URL"
+			],
+			"inputs": ["$TURBO_DEFAULT$", ".env", ".env.local"],
+			"outputs": [".next/**", "!.next/cache/**"]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+		"lint": {},
+		"format": {},
+		"check": {},
+		"start": {
+			"persistent": true
+		},
+		"test": {},
+		"typecheck": {},
+		"test:coverage": {
+			"outputs": ["coverage/**"]
+		}
+	}
+}
