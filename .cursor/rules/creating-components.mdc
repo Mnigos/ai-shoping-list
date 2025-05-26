@@ -6,6 +6,10 @@ alwaysApply: false
 # Creating components
 
 - Always wrap components in Readonly
-- Do not use `React` namespace, just use named export fe. use `ReactNode` instead of `React.ReactNode`
-- Always use `PropsWithChildren` react type util when declaring children prop.
-- Prefer inline export instead of exporting at the end of the file.
+- Do not use `React` namespace, just use named exports (e.g., use `ReactNode` instead of `React.ReactNode`, `ComponentProps` instead of `React.ComponentProps`)
+- Always use `PropsWithChildren` react type util when declaring children prop
+- For HTML element props, use `ComponentProps<'element'>` pattern (e.g., `ComponentProps<'input'>`, `ComponentProps<'button'>`)
+- Prefer inline export instead of exporting at the end of the file
+- Use proper TypeScript interfaces for component props when extending HTML elements
+- Always destructure props with proper typing in function parameters
+- Use `cn` utility for className merging when combining multiple classes

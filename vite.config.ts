@@ -12,7 +12,7 @@ export default defineConfig({
 		babel({
 			filter: /\.tsx?$/,
 			babelConfig: {
-				presets: ['@babel/preset-react'],
+				presets: ['@babel/preset-typescript'],
 				plugins: ['babel-plugin-react-compiler'],
 			},
 		}),
