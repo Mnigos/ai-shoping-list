@@ -6,8 +6,7 @@ const envSchema = z.object({
 		.default('development'),
 	DATABASE_URL: z.string().url(),
 	DIRECT_URL: z.string().url().optional(),
-	BETTER_AUTH_SECRET: z.string().min(32),
-	BETTER_AUTH_URL: z.string().url(),
+	GEMINI_API_KEY: z.string(),
 	VERCEL_URL: z.string().optional(),
 })
 
@@ -19,7 +18,11 @@ function createEnv() {
 			'❌ Invalid environment variables:',
 			parsed.error.flatten().fieldErrors,
 		)
-		throw new Error('Invalid environment variables')
+		throw new Error(
+			`❌ Invalid environment variables: ${JSON.stringify(
+				parsed.error.flatten().fieldErrors,
+			)}`,
+		)
 	}
 
 	return parsed.data

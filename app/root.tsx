@@ -10,6 +10,7 @@ import {
 import type { Route } from './+types/root'
 import { clientEnv } from './env.client'
 import './app.css'
+import { TRPCReactProvider } from './lib/trpc/react'
 
 export const links: Route.LinksFunction = () => [
 	{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -43,7 +44,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-	return <Outlet />
+	return (
+		<TRPCReactProvider>
+			<Outlet />
+		</TRPCReactProvider>
+	)
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
