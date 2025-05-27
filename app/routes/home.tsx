@@ -1,3 +1,4 @@
+import { Chat } from '~/components/chat'
 import { ShoppingList } from '~/components/shopping-list'
 
 export function meta() {
@@ -9,8 +10,9 @@ export function meta() {
 
 export default function Home() {
 	return (
-		<main className="container mx-auto p-4">
+		<main className="container mx-auto grid grid-cols-2 gap-8 p-4">
 			<ShoppingList />
+			<Chat />
 		</main>
 	)
 }
