@@ -14,7 +14,7 @@ export function ShoppingList() {
 		state.items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
 	)
 	const addItem = useShoppingListStore(state => state.addItem)
-	const checkItem = useShoppingListStore(state => state.checkItem)
+	const completeItem = useShoppingListStore(state => state.completeItem)
 	const updateItemAmount = useShoppingListStore(state => state.updateItemAmount)
 
 	function handleSubmit(event: FormEvent) {
@@ -58,19 +58,19 @@ export function ShoppingList() {
 							key={item.id}
 							className={cn(
 								'flex items-center gap-2 rounded-md bg-stone-900 px-3 py-2 transition-opacity',
-								item.isChecked ? 'opacity-50' : 'opacity-100',
+								item.isCompleted ? 'opacity-50' : 'opacity-100',
 							)}
 						>
 							<Checkbox
 								id={item.id}
-								checked={item.isChecked}
-								onCheckedChange={() => checkItem(item.id)}
+								checked={item.isCompleted}
+								onCheckedChange={() => completeItem(item.id)}
 							/>
 							<Label
 								htmlFor={item.id}
 								className={cn(
 									'flex-1 text-md transition-all duration-300',
-									item.isChecked && 'line-through',
+									item.isCompleted && 'line-through',
 								)}
 							>
 								{item.name}

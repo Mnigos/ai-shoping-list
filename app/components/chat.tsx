@@ -25,7 +25,13 @@ export function Chat({ className }: Readonly<ChatProps>) {
 	const formRef = useRef<HTMLFormElement>(null)
 	const messages = useChatStore(state => state.messages)
 	const addMessage = useChatStore(state => state.addMessage)
-	const addOrUpdateItem = useShoppingListStore(state => state.addOrUpdateItem)
+	const {
+		items,
+		addOrUpdateItem,
+		removeItemByName,
+		updateItemByName,
+		completeItemByName,
+	} = useShoppingListStore()
 	const trpc = useTRPC()
 	const [isLoading, startTransition] = useTransition()
 
@@ -49,12 +55,21 @@ export function Chat({ className }: Readonly<ChatProps>) {
 		formRef.current?.reset()
 
 		startTransition(async () => {
-			const result = await addToShoppingList({ prompt })
+			const currentItems = items.map(item => ({
+				name: item.name,
+				amount: item.amount,
+				isCompleted: Boolean(item.isCompleted),
+			}))
+
+			const result = await addToShoppingList({
+				prompt,
+				currentItems,
+			})
 
 			const processedItems = new Set<string>()
 			let assistantMessageAdded = false
 
-			for await (const { items, message } of result) {
+			for await (const { actions, message } of result) {
 				if (message && !assistantMessageAdded) {
 					addMessage({
 						id: crypto.randomUUID(),
@@ -65,16 +80,35 @@ export function Chat({ className }: Readonly<ChatProps>) {
 					assistantMessageAdded = true
 				}
 
-				if (items && Array.isArray(items)) {
-					for (const resultItem of items) {
-						if (resultItem?.name && resultItem?.amount) {
-							const itemKey = resultItem.name.toLowerCase()
+				if (actions && Array.isArray(actions)) {
+					for (const actionItem of actions) {
+						if (actionItem?.name && actionItem?.action) {
+							const itemKey = `${actionItem.action}-${actionItem.name.toLowerCase()}`
 
 							if (!processedItems.has(itemKey)) {
-								addOrUpdateItem({
-									name: resultItem.name,
-									amount: resultItem.amount,
-								})
+								switch (actionItem.action) {
+									case 'add':
+										if (actionItem.amount) {
+											addOrUpdateItem({
+												name: actionItem.name,
+												amount: actionItem.amount,
+											})
+										}
+										break
+									case 'update':
+										if (actionItem.amount) {
+											updateItemByName(actionItem.name, {
+												amount: actionItem.amount,
+											})
+										}
+										break
+									case 'delete':
+										removeItemByName(actionItem.name)
+										break
+									case 'complete':
+										completeItemByName(actionItem.name)
+										break
+								}
 								processedItems.add(itemKey)
 							}
 						}
