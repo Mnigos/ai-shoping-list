@@ -10,7 +10,7 @@ type AddToShoppingListSchema = z.infer<typeof AddToShoppingListSchema>
 
 interface ShoppingListItem extends AddToShoppingListSchema {
 	id: string
-	isChecked: boolean
+	isCompleted: boolean
 	createdAt: Date
 }
 
@@ -19,9 +19,16 @@ interface ShoppingListStore {
 	addItem: (item: AddToShoppingListSchema) => void
 	addOrUpdateItem: (item: AddToShoppingListSchema) => void
 	removeItem: (item: ShoppingListItem) => void
+	removeItemByName: (name: string) => void
 	updateItem: (item: ShoppingListItem) => void
+	updateItemByName: (
+		name: string,
+		updates: Partial<AddToShoppingListSchema>,
+	) => void
 	updateItemAmount: (id: string, amount: number) => void
-	checkItem: (id: string) => void
+	reduceItemAmount: (name: string, reduceBy: number) => void
+	completeItem: (id: string) => void
+	completeItemByName: (name: string) => void
 }
 
 export const useShoppingListStore = create<ShoppingListStore>()(
@@ -36,7 +43,7 @@ export const useShoppingListStore = create<ShoppingListStore>()(
 							...item,
 							id: crypto.randomUUID(),
 							createdAt: new Date(),
-							isChecked: false,
+							isCompleted: false,
 						},
 					],
 				})),
@@ -62,7 +69,7 @@ export const useShoppingListStore = create<ShoppingListStore>()(
 								...item,
 								id: crypto.randomUUID(),
 								createdAt: new Date(),
-								isChecked: false,
+								isCompleted: false,
 							},
 						],
 					}
@@ -71,18 +78,50 @@ export const useShoppingListStore = create<ShoppingListStore>()(
 				set(state => ({
 					items: state.items.filter(i => i.name !== item.name),
 				})),
+			removeItemByName: name =>
+				set(state => ({
+					items: state.items.filter(
+						i => i.name.toLowerCase() !== name.toLowerCase(),
+					),
+				})),
 			updateItem: item =>
 				set(state => ({
 					items: state.items.map(i => (i.name === item.name ? item : i)),
+				})),
+			updateItemByName: (name, updates) =>
+				set(state => ({
+					items: state.items.map(i =>
+						i.name.toLowerCase() === name.toLowerCase()
+							? { ...i, ...updates }
+							: i,
+					),
 				})),
 			updateItemAmount: (id, amount) =>
 				set(state => ({
 					items: state.items.map(i => (i.id === id ? { ...i, amount } : i)),
 				})),
-			checkItem: id =>
+			reduceItemAmount: (name, reduceBy) =>
+				set(state => ({
+					items: state.items
+						.map(i =>
+							i.name.toLowerCase() === name.toLowerCase()
+								? { ...i, amount: Math.max(0, i.amount - reduceBy) }
+								: i,
+						)
+						.filter(i => i.amount > 0),
+				})),
+			completeItem: id =>
 				set(state => ({
 					items: state.items.map(i =>
-						i.id === id ? { ...i, isChecked: !i.isChecked } : i,
+						i.id === id ? { ...i, isCompleted: !i.isCompleted } : i,
+					),
+				})),
+			completeItemByName: name =>
+				set(state => ({
+					items: state.items.map(i =>
+						i.name.toLowerCase() === name.toLowerCase()
+							? { ...i, isCompleted: !i.isCompleted }
+							: i,
 					),
 				})),
 		}),
@@ -91,10 +130,15 @@ export const useShoppingListStore = create<ShoppingListStore>()(
 			storage: createJSONStorage(() => localStorage),
 			onRehydrateStorage: () => state => {
 				if (state) {
-					// Convert createdAt strings back to Date objects
+					// Convert createdAt strings back to Date objects and handle isChecked -> isCompleted migration
 					state.items = state.items.map(item => ({
 						...item,
 						createdAt: new Date(item.createdAt),
+						// Handle migration from isChecked to isCompleted
+						isCompleted:
+							item.isCompleted ??
+							(item as { isChecked?: boolean }).isChecked ??
+							false,
 					}))
 				}
 			},
