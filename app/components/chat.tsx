@@ -25,7 +25,7 @@ export function Chat({ className }: Readonly<ChatProps>) {
 	const formRef = useRef<HTMLFormElement>(null)
 	const messages = useChatStore(state => state.messages)
 	const addMessage = useChatStore(state => state.addMessage)
-	const addItem = useShoppingListStore(state => state.addItem)
+	const addOrUpdateItem = useShoppingListStore(state => state.addOrUpdateItem)
 	const trpc = useTRPC()
 	const [isLoading, startTransition] = useTransition()
 
@@ -49,16 +49,38 @@ export function Chat({ className }: Readonly<ChatProps>) {
 		formRef.current?.reset()
 
 		startTransition(async () => {
-			const { message, name, amount } = await addToShoppingList({ prompt })
+			const result = await addToShoppingList({ prompt })
 
-			addMessage({
-				id: crypto.randomUUID(),
-				content: message,
-				role: 'assistant',
-				createdAt: new Date(),
-			})
+			const processedItems = new Set<string>()
+			let assistantMessageAdded = false
 
-			addItem({ name, amount })
+			for await (const { items, message } of result) {
+				if (message && !assistantMessageAdded) {
+					addMessage({
+						id: crypto.randomUUID(),
+						content: message,
+						role: 'assistant',
+						createdAt: new Date(),
+					})
+					assistantMessageAdded = true
+				}
+
+				if (items && Array.isArray(items)) {
+					for (const resultItem of items) {
+						if (resultItem?.name && resultItem?.amount) {
+							const itemKey = resultItem.name.toLowerCase()
+
+							if (!processedItems.has(itemKey)) {
+								addOrUpdateItem({
+									name: resultItem.name,
+									amount: resultItem.amount,
+								})
+								processedItems.add(itemKey)
+							}
+						}
+					}
+				}
+			}
 		})
 	}
 

@@ -5,7 +5,7 @@ import {
 	QueryClientProvider,
 	defaultShouldDehydrateQuery,
 } from '@tanstack/react-query'
-import { createTRPCClient, httpBatchLink, loggerLink } from '@trpc/client'
+import { createTRPCClient, httpBatchStreamLink, loggerLink } from '@trpc/client'
 import { createTRPCContext } from '@trpc/tanstack-react-query'
 import { type PropsWithChildren, cache, useState } from 'react'
 
@@ -56,7 +56,7 @@ const links = [
 			process.env.NODE_ENV === 'development' ||
 			(op.direction === 'down' && op.result instanceof Error),
 	}),
-	httpBatchLink({
+	httpBatchStreamLink({
 		transformer: superjson,
 		url: `${getBaseUrl()}/api/trpc`,
 		headers() {

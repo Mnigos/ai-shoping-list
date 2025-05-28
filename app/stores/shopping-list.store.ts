@@ -17,6 +17,7 @@ interface ShoppingListItem extends AddToShoppingListSchema {
 interface ShoppingListStore {
 	items: ShoppingListItem[]
 	addItem: (item: AddToShoppingListSchema) => void
+	addOrUpdateItem: (item: AddToShoppingListSchema) => void
 	removeItem: (item: ShoppingListItem) => void
 	updateItem: (item: ShoppingListItem) => void
 	updateItemAmount: (id: string, amount: number) => void
@@ -39,6 +40,33 @@ export const useShoppingListStore = create<ShoppingListStore>()(
 						},
 					],
 				})),
+			addOrUpdateItem: item =>
+				set(state => {
+					const existingItemIndex = state.items.findIndex(
+						i => i.name.toLowerCase() === item.name.toLowerCase(),
+					)
+
+					if (existingItemIndex !== -1) {
+						const updatedItems = [...state.items]
+						updatedItems[existingItemIndex] = {
+							...updatedItems[existingItemIndex],
+							amount: updatedItems[existingItemIndex].amount + item.amount,
+						}
+						return { items: updatedItems }
+					}
+
+					return {
+						items: [
+							...state.items,
+							{
+								...item,
+								id: crypto.randomUUID(),
+								createdAt: new Date(),
+								isChecked: false,
+							},
+						],
+					}
+				}),
 			removeItem: item =>
 				set(state => ({
 					items: state.items.filter(i => i.name !== item.name),
