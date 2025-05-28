@@ -15,7 +15,8 @@
 			"**/out/**",
 			"**/storybook-static/**",
 			"**/.turbo/**",
-			"**/lib/generated/**"
+			"**/lib/generated/**",
+			"**/.react-router/**"
 		]
 	},
 	"formatter": {

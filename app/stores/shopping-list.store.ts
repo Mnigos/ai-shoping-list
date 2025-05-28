@@ -1,23 +1,26 @@
+import z from 'zod'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-interface ShoppingListItem {
+export const AddToShoppingListSchema = z.object({
+	name: z.string().describe('The name of the item'),
+	amount: z.number().describe('The amount of the item'),
+})
+type AddToShoppingListSchema = z.infer<typeof AddToShoppingListSchema>
+
+interface ShoppingListItem extends AddToShoppingListSchema {
 	id: string
-	name: string
-	amount: number
 	isChecked: boolean
 	createdAt: Date
 }
 
 interface ShoppingListStore {
 	items: ShoppingListItem[]
-	addItem: (item: Omit<ShoppingListItem, 'id' | 'createdAt'>) => void
+	addItem: (item: AddToShoppingListSchema) => void
 	removeItem: (item: ShoppingListItem) => void
 	updateItem: (item: ShoppingListItem) => void
 	updateItemAmount: (id: string, amount: number) => void
 	checkItem: (id: string) => void
-	clearItems: () => void
-	sortItems: () => void
 }
 
 export const useShoppingListStore = create<ShoppingListStore>()(
@@ -28,7 +31,12 @@ export const useShoppingListStore = create<ShoppingListStore>()(
 				set(state => ({
 					items: [
 						...state.items,
-						{ ...item, id: crypto.randomUUID(), createdAt: new Date() },
+						{
+							...item,
+							id: crypto.randomUUID(),
+							createdAt: new Date(),
+							isChecked: false,
+						},
 					],
 				})),
 			removeItem: item =>
@@ -48,16 +56,6 @@ export const useShoppingListStore = create<ShoppingListStore>()(
 					items: state.items.map(i =>
 						i.id === id ? { ...i, isChecked: !i.isChecked } : i,
 					),
-				})),
-			clearItems: () => set({ items: [] }),
-			sortItems: () =>
-				set(state => ({
-					items: state.items.sort((a, b) => {
-						if (a.isChecked === b.isChecked) {
-							return a.name.localeCompare(b.name)
-						}
-						return a.isChecked ? 1 : -1
-					}),
 				})),
 		}),
 		{

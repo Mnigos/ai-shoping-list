@@ -6,7 +6,7 @@ const envSchema = z.object({
 		.default('development'),
 	DATABASE_URL: z.string().url(),
 	DIRECT_URL: z.string().url().optional(),
-	GEMINI_API_KEY: z.string(),
+	GOOGLE_GENERATIVE_AI_API_KEY: z.string(),
 	VERCEL_URL: z.string().optional(),
 })
 
@@ -30,5 +30,4 @@ function createEnv() {
 
 export const env = createEnv()
 
-// Type for environment variables
 export type Env = z.infer<typeof envSchema>

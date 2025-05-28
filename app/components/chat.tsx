@@ -1,6 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
+import { type FormEvent, useRef, useTransition } from 'react'
+import { useTRPC } from '~/lib/trpc/react'
+import { useChatStore } from '~/stores/chat.store'
+import { useShoppingListStore } from '~/stores/shopping-list.store'
 import { cn } from '~/utils/cn'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
@@ -9,7 +14,7 @@ interface Message {
 	id: string
 	content: string
 	role: 'user' | 'assistant'
-	timestamp: Date
+	createdAt: Date
 }
 
 interface ChatProps {
@@ -17,16 +22,45 @@ interface ChatProps {
 }
 
 export function Chat({ className }: Readonly<ChatProps>) {
-	const [messages, setMessages] = useState<Message[]>([
-		{
-			id: '1',
-			content:
-				"Hi! I'm here to help you manage your shopping list. What would you like to add to your shopping list today?",
-			role: 'assistant',
-			timestamp: new Date(),
-		},
-	])
-	const [inputValue, setInputValue] = useState('')
+	const formRef = useRef<HTMLFormElement>(null)
+	const messages = useChatStore(state => state.messages)
+	const addMessage = useChatStore(state => state.addMessage)
+	const addItem = useShoppingListStore(state => state.addItem)
+	const trpc = useTRPC()
+	const [isLoading, startTransition] = useTransition()
+
+	const { mutateAsync: addToShoppingList } = useMutation(
+		trpc.assistant.addToShoppingList.mutationOptions(),
+	)
+
+	function handleSubmit(event: FormEvent) {
+		event.preventDefault()
+
+		const formData = new FormData(event.target as HTMLFormElement)
+		const prompt = formData.get('prompt') as string
+
+		addMessage({
+			id: crypto.randomUUID(),
+			content: prompt.trim(),
+			role: 'user',
+			createdAt: new Date(),
+		})
+
+		formRef.current?.reset()
+
+		startTransition(async () => {
+			const { message, name, amount } = await addToShoppingList({ prompt })
+
+			addMessage({
+				id: crypto.randomUUID(),
+				content: message,
+				role: 'assistant',
+				createdAt: new Date(),
+			})
+
+			addItem({ name, amount })
+		})
+	}
 
 	return (
 		<section className={cn('flex flex-col gap-8', className)}>
@@ -41,16 +75,33 @@ export function Chat({ className }: Readonly<ChatProps>) {
 					))}
 				</div>
 
-				<form className="flex flex-col gap-2">
+				<form
+					ref={formRef}
+					className="flex flex-col gap-2"
+					onSubmit={handleSubmit}
+				>
 					<Textarea
 						placeholder="Send a message"
-						value={inputValue}
-						onChange={e => setInputValue(e.target.value)}
+						name="prompt"
 						rows={3}
+						onKeyDown={e => {
+							if (e.key === 'Enter' && !e.shiftKey) {
+								e.preventDefault()
+								formRef.current?.requestSubmit()
+							}
+						}}
 					/>
 
 					<div className="flex justify-end">
-						<Button disabled={!inputValue.trim()}>Send</Button>
+						<Button type="submit">
+							{isLoading ? (
+								<>
+									<Loader2 className="animate-spin" /> Sending...
+								</>
+							) : (
+								'Send'
+							)}
+						</Button>
 					</div>
 				</form>
 			</div>
@@ -82,7 +133,7 @@ function ChatMessage({ message }: Readonly<ChatMessageProps>) {
 						isAssistant ? 'text-muted-foreground' : 'text-primary-foreground',
 					)}
 				>
-					{message.timestamp.toLocaleTimeString([], {
+					{message.createdAt.toLocaleTimeString([], {
 						hour: '2-digit',
 						minute: '2-digit',
 					})}

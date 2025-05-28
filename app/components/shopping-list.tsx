@@ -16,7 +16,6 @@ export function ShoppingList() {
 	const addItem = useShoppingListStore(state => state.addItem)
 	const checkItem = useShoppingListStore(state => state.checkItem)
 	const updateItemAmount = useShoppingListStore(state => state.updateItemAmount)
-	const sortItems = useShoppingListStore(state => state.sortItems)
 
 	function handleSubmit(event: FormEvent) {
 		event.preventDefault()
@@ -25,7 +24,7 @@ export function ShoppingList() {
 		const name = formData.get('name') as string
 		const amount = Number(formData.get('amount')) ?? 1
 
-		addItem({ name, amount, isChecked: false })
+		addItem({ name, amount })
 		formRef.current?.reset()
 	}
 
@@ -51,9 +50,6 @@ export function ShoppingList() {
 						className="w-24"
 					/>
 					<Button type="submit">Add</Button>
-					<Button type="button" variant="outline" onClick={sortItems}>
-						Sort
-					</Button>
 				</form>
 
 				<ul className="flex flex-col gap-2">
