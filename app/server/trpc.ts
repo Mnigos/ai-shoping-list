@@ -1,12 +1,10 @@
-import superjson from 'superjson'
-
 import { initTRPC } from '@trpc/server'
+import superjson from 'superjson'
 import { ZodError } from 'zod'
 
 import { prisma } from '~/server/prisma'
-import { assistantRouter } from './routers/assistant'
 
-export const createTRPCContext = async (opts: { headers: Headers }) => {
+export async function createTRPCContext(opts: { headers: Headers }) {
 	const source = opts.headers.get('x-trpc-source') ?? 'unknown'
 
 	return {

@@ -1,7 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 import { Chat } from '~/components/chat'
 import { ShoppingList } from '~/components/shopping-list'
-import { useTRPC } from '~/lib/trpc/react'
+import { getQueryClient } from '~/lib/trpc/react'
+import { createTRPC } from '~/lib/trpc/server'
+import type { Route } from './+types/home'
+import Example from './example'
 
 export function meta() {
 	return [
@@ -10,15 +13,27 @@ export function meta() {
 	]
 }
 
-export default function Home() {
-	const trpc = useTRPC()
-	const { data } = useQuery(trpc.assistant.hello.queryOptions())
-	console.log(data)
+export async function loader(loaderArgs: Route.LoaderArgs) {
+	const queryClient = getQueryClient()
+	const trpc = await createTRPC(loaderArgs.request)
 
+	await queryClient.prefetchQuery(trpc.assistant.hello.queryOptions())
+
+	return {
+		queryClient: dehydrate(queryClient),
+	}
+}
+
+export default function Home({
+	loaderData: { queryClient },
+}: Route.ComponentProps) {
 	return (
-		<main className="container mx-auto grid grid-cols-2 gap-8 p-4">
-			<ShoppingList />
-			<Chat />
-		</main>
+		<HydrationBoundary state={queryClient}>
+			<main className="container mx-auto grid grid-cols-2 gap-8 p-4">
+				<ShoppingList />
+				<Chat />
+			</main>
+			<Example />
+		</HydrationBoundary>
 	)
 }

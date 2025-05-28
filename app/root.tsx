@@ -1,3 +1,4 @@
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import {
 	Links,
 	Meta,
@@ -10,6 +11,7 @@ import {
 import type { Route } from './+types/root'
 import { clientEnv } from './env.client'
 import './app.css'
+import type { PropsWithChildren } from 'react'
 import { TRPCReactProvider } from './lib/trpc/react'
 
 export const links: Route.LinksFunction = () => [
@@ -25,7 +27,7 @@ export const links: Route.LinksFunction = () => [
 	},
 ]
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: PropsWithChildren) {
 	return (
 		<html lang="en">
 			<head>
@@ -47,6 +49,8 @@ export default function App() {
 	return (
 		<TRPCReactProvider>
 			<Outlet />
+
+			<ReactQueryDevtools />
 		</TRPCReactProvider>
 	)
 }
@@ -62,7 +66,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 			error.status === 404
 				? 'The requested page could not be found.'
 				: error.statusText || details
-	} else if (clientEnv.DEV && error && error instanceof Error) {
+	} else if (clientEnv?.DEV && error && error instanceof Error) {
 		details = error.message
 		stack = error.stack
 	}

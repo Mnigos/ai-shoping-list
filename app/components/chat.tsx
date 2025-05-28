@@ -1,6 +1,5 @@
 'use client'
 
-import type { ComponentProps, PropsWithChildren } from 'react'
 import { useState } from 'react'
 import { cn } from '~/utils/cn'
 import { Button } from './ui/button'

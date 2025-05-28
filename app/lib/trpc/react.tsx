@@ -1,9 +1,13 @@
-import SuperJSON from 'superjson'
+import superjson from 'superjson'
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+	QueryClient,
+	QueryClientProvider,
+	defaultShouldDehydrateQuery,
+} from '@tanstack/react-query'
 import { createTRPCClient, httpBatchLink, loggerLink } from '@trpc/client'
 import { createTRPCContext } from '@trpc/tanstack-react-query'
-import { type PropsWithChildren, useState } from 'react'
+import { type PropsWithChildren, cache, useState } from 'react'
 
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server'
 import { clientEnv } from '~/env.client'
@@ -15,27 +19,36 @@ function makeQueryClient() {
 			queries: {
 				staleTime: 60 * 1000,
 			},
+			dehydrate: {
+				serializeData: superjson.serialize,
+				shouldDehydrateQuery: query =>
+					defaultShouldDehydrateQuery(query) ||
+					query.state.status === 'pending',
+			},
+			hydrate: {
+				deserializeData: superjson.deserialize,
+			},
 		},
 	})
 }
 
 let browserQueryClient: QueryClient | undefined = undefined
 
-function getQueryClient() {
+export const getQueryClient = cache(() => {
 	if (typeof window === 'undefined') return makeQueryClient()
 
 	browserQueryClient ??= makeQueryClient()
 
 	return browserQueryClient
-}
+})
 
-function getBaseUrl() {
+const getBaseUrl = cache(() => {
 	if (typeof window !== 'undefined') return window.location.origin
 
 	if (clientEnv?.VITE_VERCEL_URL) return `https://${clientEnv.VITE_VERCEL_URL}`
 
 	return 'http://localhost:5173'
-}
+})
 
 const links = [
 	loggerLink({
@@ -44,7 +57,7 @@ const links = [
 			(op.direction === 'down' && op.result instanceof Error),
 	}),
 	httpBatchLink({
-		transformer: SuperJSON,
+		transformer: superjson,
 		url: `${getBaseUrl()}/api/trpc`,
 		headers() {
 			const headers = new Headers()
