@@ -1,18 +1,13 @@
-import type { PrismaClient } from '@prisma/client'
 import type { TRPCRouterRecord } from '@trpc/server'
 import z from 'zod'
+import {
+	ShoppingListActionSchema,
+	handleAddAction,
+	handleCompleteAction,
+	handleDeleteAction,
+	handleUpdateAction,
+} from '../helpers/shopping-list'
 import { protectedProcedure } from '../trpc'
-
-type PrismaTransaction = Omit<
-	PrismaClient,
-	'$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
->
-
-const ShoppingListActionSchema = z.object({
-	action: z.enum(['add', 'update', 'delete', 'complete']),
-	name: z.string(),
-	amount: z.number().min(1, 'Amount must be at least 1').optional(),
-})
 
 export const shoppingListRouter = {
 	getItems: protectedProcedure.query(async ({ ctx }) => {
@@ -117,116 +112,3 @@ export const shoppingListRouter = {
 			})
 		}),
 } satisfies TRPCRouterRecord
-
-async function handleAddAction(
-	tx: PrismaTransaction,
-	userId: string,
-	action: z.infer<typeof ShoppingListActionSchema>,
-) {
-	if (!action.amount || action.amount < 1) {
-		throw new Error('Amount must be at least 1 for add action')
-	}
-
-	const existingItem = await tx.shoppingListItem.findFirst({
-		where: {
-			userId,
-			name: {
-				equals: action.name,
-				mode: 'insensitive',
-			},
-		},
-	})
-
-	if (existingItem) {
-		await tx.shoppingListItem.update({
-			where: { id: existingItem.id },
-			data: { amount: existingItem.amount + action.amount },
-		})
-	} else {
-		await tx.shoppingListItem.create({
-			data: {
-				name: action.name,
-				amount: action.amount,
-				userId,
-			},
-		})
-	}
-}
-
-async function handleUpdateAction(
-	tx: PrismaTransaction,
-	userId: string,
-	action: z.infer<typeof ShoppingListActionSchema>,
-) {
-	if (!action.amount || action.amount < 1) {
-		throw new Error('Amount must be at least 1 for update action')
-	}
-
-	const existingItem = await tx.shoppingListItem.findFirst({
-		where: {
-			userId,
-			name: {
-				equals: action.name,
-				mode: 'insensitive',
-			},
-		},
-	})
-
-	if (!existingItem) {
-		throw new Error(`Item "${action.name}" not found`)
-	}
-
-	await tx.shoppingListItem.update({
-		where: { id: existingItem.id },
-		data: { amount: action.amount },
-	})
-}
-
-async function handleDeleteAction(
-	tx: PrismaTransaction,
-	userId: string,
-	action: z.infer<typeof ShoppingListActionSchema>,
-) {
-	const existingItem = await tx.shoppingListItem.findFirst({
-		where: {
-			userId,
-			name: {
-				equals: action.name,
-				mode: 'insensitive',
-			},
-		},
-	})
-
-	if (!existingItem) {
-		throw new Error(`Item "${action.name}" not found`)
-	}
-
-	await tx.shoppingListItem.delete({
-		where: { id: existingItem.id },
-	})
-}
-
-async function handleCompleteAction(
-	tx: PrismaTransaction,
-	userId: string,
-	action: z.infer<typeof ShoppingListActionSchema>,
-) {
-	const existingItem = await tx.shoppingListItem.findFirst({
-		where: {
-			userId,
-			name: {
-				equals: action.name,
-				mode: 'insensitive',
-			},
-		},
-	})
-
-	if (!existingItem) {
-		throw new Error(`Item "${action.name}" not found`)
-	}
-
-	await tx.shoppingListItem.update({
-		where: { id: existingItem.id },
-		data: { isCompleted: !existingItem.isCompleted },
-	})
-}
