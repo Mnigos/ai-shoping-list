@@ -4,19 +4,31 @@ import { streamObject } from 'ai'
 import z from 'zod'
 import { protectedProcedure } from '../trpc'
 
-const ShoppingListActionItemSchema = z.object({
-	action: z
-		.enum(['add', 'update', 'delete', 'complete'])
-		.describe('The action to perform on this item'),
-	name: z.string().describe('The name of the item'),
-	amount: z
-		.number()
-		.min(1, 'Amount must be at least 1')
-		.optional()
-		.describe(
-			'The amount of the item (not required for delete/complete actions)',
-		),
-})
+const ShoppingListActionItemSchema = z
+	.object({
+		action: z
+			.enum(['add', 'update', 'delete', 'complete'])
+			.describe('The action to perform on this item'),
+		name: z.string().describe('The name of the item'),
+		amount: z
+			.number()
+			.min(1, 'Amount must be at least 1')
+			.describe(
+				'The amount of the item (required for add/update actions, optional for delete/complete actions)',
+			),
+	})
+	.refine(
+		data => {
+			if ((data.action === 'add' || data.action === 'update') && !data.amount) {
+				return false
+			}
+			return true
+		},
+		{
+			message: 'Amount is required for add and update actions',
+			path: ['amount'],
+		},
+	)
 
 const ShoppingListActionSchema = z.object({
 	actions: z
@@ -34,7 +46,6 @@ export const assistantRouter = {
 	addToShoppingList: protectedProcedure
 		.input(z.object({ prompt: z.string() }))
 		.mutation(async function* ({ ctx, input: { prompt } }) {
-			// Get current items from database
 			const currentItems = await ctx.prisma.shoppingListItem.findMany({
 				where: { userId: ctx.user.id },
 				orderBy: { createdAt: 'desc' },
@@ -59,19 +70,22 @@ export const assistantRouter = {
         You can perform multiple different actions in a single response.
         
         Available actions:
-        - "add": Add new items to the shopping list or increase quantity of existing items
-        - "update": Update the amount/quantity of existing items to a specific value (replaces current amount)
-        - "delete": Remove items from the shopping list (can be partial removal)
-        - "complete": Mark items as completed/done
+        - "add": Add new items to the shopping list or increase quantity of existing items (REQUIRES amount)
+        - "update": Update the amount/quantity of existing items to a specific value (REQUIRES amount)
+        - "delete": Remove items from the shopping list (amount is optional)
+        - "complete": Mark items as completed/done (amount is optional)
         
-        IMPORTANT: For delete actions, consider the current quantities:
-        - If user wants to remove ALL of an item, use delete action without amount
-        - If user wants to remove SOME of an item (partial removal), use update action with the remaining amount
-        - For example: if there are 5 apples and user says "remove 2 apples", use update action with amount: 3
-        
-        For each action, provide the item name and amount (amount is optional for delete/complete actions).
+        IMPORTANT RULES:
+        1. For "add" and "update" actions, you MUST always provide an amount (minimum 1)
+        2. For "delete" and "complete" actions, amount is optional
+        3. If no amount is specified by the user for add actions, default to 1
+        4. For delete actions, consider the current quantities:
+           - If user wants to remove ALL of an item, use delete action without amount
+           - If user wants to remove SOME of an item (partial removal), use update action with the remaining amount
+           - For example: if there are 5 apples and user says "remove 2 apples", use update action with amount: 3
         
         Examples:
+        - "Add apples" -> actions: [{action: "add", name: "apples", amount: 1}]
         - "Add 2 apples and 1 milk" -> actions: [{action: "add", name: "apples", amount: 2}, {action: "add", name: "milk", amount: 1}]
         - "Remove bananas and mark bread as done" -> actions: [{action: "delete", name: "bananas"}, {action: "complete", name: "bread"}]
         - "Update milk to 2 bottles and add 3 oranges" -> actions: [{action: "update", name: "milk", amount: 2}, {action: "add", name: "oranges", amount: 3}]

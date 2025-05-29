@@ -71,47 +71,60 @@ export function Chat({ className }: Readonly<ChatProps>) {
 		formRef.current?.reset()
 
 		startTransition(async () => {
-			// 2. Get actions from assistant (no currentItems needed)
-			const result = await addToShoppingList({ prompt })
+			try {
+				// 2. Get actions from assistant (no currentItems needed)
+				const result = await addToShoppingList({ prompt })
 
-			// 3. Collect actions and assistant message
-			const allActions: Array<{
-				action: 'add' | 'update' | 'delete' | 'complete'
-				name: string
-				amount?: number
-			}> = []
-			let assistantMessage = ''
+				// 3. Collect actions and assistant message
+				const allActions: Array<{
+					action: 'add' | 'update' | 'delete' | 'complete'
+					name: string
+					amount?: number
+				}> = []
+				let assistantMessage = ''
 
-			for await (const chunk of result) {
-				if (chunk?.actions && Array.isArray(chunk.actions)) {
-					for (const action of chunk.actions) {
-						if (action?.action && action?.name) {
-							allActions.push({
-								action: action.action,
-								name: action.name,
-								amount: action.amount,
-							})
+				for await (const chunk of result) {
+					if (chunk?.actions && Array.isArray(chunk.actions)) {
+						for (const action of chunk.actions) {
+							if (action?.action && action?.name) {
+								allActions.push({
+									action: action.action,
+									name: action.name,
+									amount: action.amount,
+								})
+							}
 						}
 					}
+					if (chunk?.message) {
+						assistantMessage = chunk.message
+					}
 				}
-				if (chunk?.message) {
-					assistantMessage = chunk.message
-				}
-			}
 
-			// 4. Add assistant message to chat store
-			if (assistantMessage) {
+				// 4. Add assistant message to chat store
+				if (assistantMessage) {
+					addMessage({
+						id: crypto.randomUUID(),
+						content: assistantMessage,
+						role: 'assistant',
+						createdAt: new Date(),
+					})
+				}
+
+				// 5. Execute shopping list actions in database
+				if (allActions.length > 0) {
+					await executeShoppingListActions({ actions: allActions })
+				}
+			} catch (error) {
+				console.error('Error processing chat message:', error)
+
+				// Add error message to chat
 				addMessage({
 					id: crypto.randomUUID(),
-					content: assistantMessage,
+					content:
+						'Sorry, I encountered an error processing your request. Please try again.',
 					role: 'assistant',
 					createdAt: new Date(),
 				})
-			}
-
-			// 5. Execute shopping list actions in database
-			if (allActions.length > 0) {
-				await executeShoppingListActions({ actions: allActions })
 			}
 		})
 	}

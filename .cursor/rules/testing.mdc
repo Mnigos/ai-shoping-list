@@ -1,0 +1,16 @@
+---
+description: 
+globs: *.spec.tsx,*.spec.ts
+alwaysApply: false
+---
+# Testing
+
+- This project uses vitest for testing
+- Use Vitest for faster testing in Vite-based projects
+- Implement the test.each pattern for parameterized tests
+- Use the setup files for global test configuration
+- Implement mocking for modules and dependencies
+- Always create variables with repeated data like id, limit, count etc.
+- Always use `test` instead of `it`
+- Global mode is enabled so do not import stuff like `test` from vitest
+- Don't import describe, test etc. global mode is enabled
