@@ -39,10 +39,8 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 			})
 	}
 
-	// Prefetch shopping list items for authenticated users
-	if (session?.user) {
+	if (session?.user)
 		await queryClient.prefetchQuery(trpc.shoppingList.getItems.queryOptions())
-	}
 
 	return {
 		queryClient: dehydrate(queryClient),

@@ -21,7 +21,7 @@ export const shoppingListRouter = {
 		.input(z.object({ actions: z.array(ShoppingListActionSchema) }))
 		.mutation(async ({ ctx, input }) => {
 			return ctx.prisma.$transaction(async tx => {
-				for (const action of input.actions) {
+				for (const action of input.actions)
 					switch (action.action) {
 						case 'add':
 							await handleAddAction(tx, ctx.user.id, action)
@@ -36,7 +36,6 @@ export const shoppingListRouter = {
 							await handleCompleteAction(tx, ctx.user.id, action)
 							break
 					}
-				}
 
 				return tx.shoppingListItem.findMany({
 					where: { userId: ctx.user.id },
@@ -62,15 +61,11 @@ export const shoppingListRouter = {
 					},
 				})
 			} catch (error) {
-				if (
-					error instanceof Error &&
-					'code' in error &&
-					error.code === 'P2002'
-				) {
+				if (error instanceof Error && 'code' in error && error.code === 'P2002')
 					throw new Error(
 						`Item "${input.name}" already exists in your shopping list`,
 					)
-				}
+
 				throw error
 			}
 		}),
@@ -84,7 +79,7 @@ export const shoppingListRouter = {
 		)
 		.mutation(async ({ ctx, input }) => {
 			return ctx.prisma.shoppingListItem.update({
-				where: { id: input.id },
+				where: { id: input.id, userId: ctx.user.id },
 				data: { amount: input.amount },
 			})
 		}),
@@ -93,13 +88,13 @@ export const shoppingListRouter = {
 		.input(z.object({ id: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			const item = await ctx.prisma.shoppingListItem.findUnique({
-				where: { id: input.id },
+				where: { id: input.id, userId: ctx.user.id },
 			})
 
 			if (!item) throw new Error('Item not found')
 
 			return ctx.prisma.shoppingListItem.update({
-				where: { id: input.id },
+				where: { id: input.id, userId: ctx.user.id },
 				data: { isCompleted: !item.isCompleted },
 			})
 		}),
@@ -108,7 +103,7 @@ export const shoppingListRouter = {
 		.input(z.object({ id: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			return ctx.prisma.shoppingListItem.delete({
-				where: { id: input.id },
+				where: { id: input.id, userId: ctx.user.id },
 			})
 		}),
 } satisfies TRPCRouterRecord
