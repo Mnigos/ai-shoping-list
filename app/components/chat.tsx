@@ -2,20 +2,13 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
-import { type FormEvent, useRef, useTransition } from 'react'
+import { type FormEvent, useEffect, useRef, useTransition } from 'react'
 import { useTRPC } from '~/lib/trpc/react'
-import { useChatStore } from '~/stores/chat.store'
+import { type Message, useChatStore } from '~/stores/chat.store'
 import { useShoppingListStore } from '~/stores/shopping-list.store'
 import { cn } from '~/utils/cn'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
-
-interface Message {
-	id: string
-	content: string
-	role: 'user' | 'assistant'
-	createdAt: Date
-}
 
 interface ChatProps {
 	className?: string
@@ -23,6 +16,9 @@ interface ChatProps {
 
 export function Chat({ className }: Readonly<ChatProps>) {
 	const formRef = useRef<HTMLFormElement>(null)
+	const messagesEndRef = useRef<HTMLDivElement>(null)
+	const messagesContainerRef = useRef<HTMLDivElement>(null)
+	const prevMessagesLengthRef = useRef(0)
 	const messages = useChatStore(state => state.messages)
 	const addMessage = useChatStore(state => state.addMessage)
 	const {
@@ -38,6 +34,23 @@ export function Chat({ className }: Readonly<ChatProps>) {
 	const { mutateAsync: addToShoppingList } = useMutation(
 		trpc.assistant.addToShoppingList.mutationOptions(),
 	)
+
+	useEffect(() => {
+		if (messages.length > 0 && prevMessagesLengthRef.current === 0) {
+			prevMessagesLengthRef.current = messages.length
+
+			if (messagesContainerRef.current)
+				messagesContainerRef.current.scrollTop =
+					messagesContainerRef.current.scrollHeight
+		}
+	}, [messages.length])
+
+	useEffect(() => {
+		if (messages.length > prevMessagesLengthRef.current) {
+			messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+			prevMessagesLengthRef.current = messages.length
+		}
+	}, [messages.length])
 
 	function handleSubmit(event: FormEvent) {
 		event.preventDefault()
@@ -125,10 +138,14 @@ export function Chat({ className }: Readonly<ChatProps>) {
 			</header>
 
 			<div className="flex flex-col gap-4">
-				<div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
+				<div
+					ref={messagesContainerRef}
+					className="flex max-h-96 flex-col gap-3 overflow-y-auto"
+				>
 					{messages.map(message => (
 						<ChatMessage key={message.id} message={message} />
 					))}
+					<div ref={messagesEndRef} />
 				</div>
 
 				<form
@@ -148,17 +165,15 @@ export function Chat({ className }: Readonly<ChatProps>) {
 						}}
 					/>
 
-					<div className="flex justify-end">
-						<Button type="submit">
-							{isLoading ? (
-								<>
-									<Loader2 className="animate-spin" /> Sending...
-								</>
-							) : (
-								'Send'
-							)}
-						</Button>
-					</div>
+					<Button type="submit" className="self-end">
+						{isLoading ? (
+							<>
+								<Loader2 className="animate-spin" /> Sending...
+							</>
+						) : (
+							'Send'
+						)}
+					</Button>
 				</form>
 			</div>
 		</section>
