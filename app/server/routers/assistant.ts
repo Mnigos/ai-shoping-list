@@ -2,7 +2,7 @@ import { google } from '@ai-sdk/google'
 import type { TRPCRouterRecord } from '@trpc/server'
 import { streamObject } from 'ai'
 import z from 'zod'
-import { publicProcedure } from '../trpc'
+import { protectedProcedure } from '../trpc'
 
 const ShoppingListActionItemSchema = z.object({
 	action: z
@@ -11,16 +11,11 @@ const ShoppingListActionItemSchema = z.object({
 	name: z.string().describe('The name of the item'),
 	amount: z
 		.number()
+		.min(1, 'Amount must be at least 1')
 		.optional()
 		.describe(
 			'The amount of the item (not required for delete/complete actions)',
 		),
-})
-
-const CurrentShoppingListItemSchema = z.object({
-	name: z.string(),
-	amount: z.number(),
-	isCompleted: z.boolean(),
 })
 
 const ShoppingListActionSchema = z.object({
@@ -35,15 +30,16 @@ const ShoppingListActionSchema = z.object({
 })
 
 export const assistantRouter = {
-	hello: publicProcedure.query(async () => 'Hello, world!'),
-	addToShoppingList: publicProcedure
-		.input(
-			z.object({
-				prompt: z.string(),
-				currentItems: z.array(CurrentShoppingListItemSchema).optional(),
-			}),
-		)
-		.mutation(async function* ({ input: { prompt, currentItems = [] } }) {
+	hello: protectedProcedure.query(async () => 'Hello, world!'),
+	addToShoppingList: protectedProcedure
+		.input(z.object({ prompt: z.string() }))
+		.mutation(async function* ({ ctx, input: { prompt } }) {
+			// Get current items from database
+			const currentItems = await ctx.prisma.shoppingListItem.findMany({
+				where: { userId: ctx.user.id },
+				orderBy: { createdAt: 'desc' },
+			})
+
 			const currentItemsText =
 				currentItems.length > 0
 					? `\n\nCurrent shopping list:\n${currentItems
@@ -81,8 +77,7 @@ export const assistantRouter = {
         - "Update milk to 2 bottles and add 3 oranges" -> actions: [{action: "update", name: "milk", amount: 2}, {action: "add", name: "oranges", amount: 3}]
         - "Remove 2 apples" (when there are 5 apples) -> actions: [{action: "update", name: "apples", amount: 3}]
         - "Remove all apples" -> actions: [{action: "delete", name: "apples"}]
-        
-        Current shopping list:
+
         ${currentItemsText}
         
         The prompt is: ${prompt}

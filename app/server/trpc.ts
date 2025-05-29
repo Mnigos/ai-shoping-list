@@ -5,6 +5,8 @@ import { ZodError } from 'zod'
 import { auth } from '~/lib/auth.server'
 import { prisma } from '~/lib/prisma'
 
+console.log('>>> Prisma client imported:', !!prisma, typeof prisma)
+
 export async function createTRPCContext(opts: { headers: Headers }) {
 	const session = await auth.api.getSession({
 		headers: opts.headers,
@@ -12,7 +14,6 @@ export async function createTRPCContext(opts: { headers: Headers }) {
 
 	const source = opts.headers.get('x-trpc-source') ?? 'unknown'
 	console.log('>>> tRPC Request from', source, 'by', session?.user.email)
-
 	return {
 		prisma,
 		user: session?.user,
@@ -39,6 +40,7 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 
 	return next({
 		ctx: {
+			...ctx,
 			user: ctx.user,
 		},
 	})
