@@ -1,14 +1,21 @@
-import { initTRPC } from '@trpc/server'
+import { TRPCError, initTRPC } from '@trpc/server'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
 
-import { prisma } from '~/server/prisma'
+import { auth } from '~/lib/auth.server'
+import { prisma } from '~/lib/prisma'
 
 export async function createTRPCContext(opts: { headers: Headers }) {
+	const session = await auth.api.getSession({
+		headers: opts.headers,
+	})
+
 	const source = opts.headers.get('x-trpc-source') ?? 'unknown'
+	console.log('>>> tRPC Request from', source, 'by', session?.user.email)
 
 	return {
 		prisma,
+		user: session?.user,
 	}
 }
 type Context = Awaited<ReturnType<typeof createTRPCContext>>
@@ -27,3 +34,12 @@ const t = initTRPC.context<Context>().create({
 export const createCallerFactory = t.createCallerFactory
 export const createTRPCRouter = t.router
 export const publicProcedure = t.procedure
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+	if (!ctx.user?.id) throw new TRPCError({ code: 'UNAUTHORIZED' })
+
+	return next({
+		ctx: {
+			user: ctx.user,
+		},
+	})
+})

@@ -8,6 +8,8 @@ const envSchema = z.object({
 	DIRECT_URL: z.string().url().optional(),
 	GOOGLE_GENERATIVE_AI_API_KEY: z.string(),
 	VERCEL_URL: z.string().optional(),
+	BETTER_AUTH_URL: z.string().url().default('http://localhost:5173'),
+	BETTER_AUTH_SECRET: z.string(),
 })
 
 function createEnv() {
