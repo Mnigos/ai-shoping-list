@@ -1,5 +1,5 @@
 ---
-description: 
+description: Testing guidelines and conventions for spec files using Vitest
 globs: *.spec.tsx,*.spec.ts
 alwaysApply: false
 ---
