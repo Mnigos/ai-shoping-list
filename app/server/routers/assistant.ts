@@ -15,7 +15,8 @@ const ShoppingListActionItemSchema = z
 			.min(1, 'Amount must be at least 1')
 			.describe(
 				'The amount of the item (required for add/update actions, optional for delete/complete actions)',
-			),
+			)
+			.optional(),
 	})
 	.refine(
 		data => {

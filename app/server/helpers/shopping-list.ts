@@ -17,9 +17,8 @@ export async function handleAddAction(
 	userId: string,
 	action: z.infer<typeof ShoppingListActionSchema>,
 ) {
-	if (!action.amount || action.amount < 1) {
+	if (!action.amount || action.amount < 1)
 		throw new Error('Amount must be at least 1 for add action')
-	}
 
 	const existingItem = await tx.shoppingListItem.findFirst({
 		where: {
@@ -31,12 +30,12 @@ export async function handleAddAction(
 		},
 	})
 
-	if (existingItem) {
+	if (existingItem)
 		await tx.shoppingListItem.update({
 			where: { id: existingItem.id },
 			data: { amount: existingItem.amount + action.amount },
 		})
-	} else {
+	else
 		await tx.shoppingListItem.create({
 			data: {
 				name: action.name,
@@ -44,7 +43,6 @@ export async function handleAddAction(
 				userId,
 			},
 		})
-	}
 }
 
 export async function handleUpdateAction(
@@ -52,9 +50,8 @@ export async function handleUpdateAction(
 	userId: string,
 	action: z.infer<typeof ShoppingListActionSchema>,
 ) {
-	if (!action.amount || action.amount < 1) {
+	if (!action.amount || action.amount < 1)
 		throw new Error('Amount must be at least 1 for update action')
-	}
 
 	const existingItem = await tx.shoppingListItem.findFirst({
 		where: {
@@ -66,9 +63,7 @@ export async function handleUpdateAction(
 		},
 	})
 
-	if (!existingItem) {
-		throw new Error(`Item "${action.name}" not found`)
-	}
+	if (!existingItem) throw new Error(`Item "${action.name}" not found`)
 
 	await tx.shoppingListItem.update({
 		where: { id: existingItem.id },
@@ -91,9 +86,7 @@ export async function handleDeleteAction(
 		},
 	})
 
-	if (!existingItem) {
-		throw new Error(`Item "${action.name}" not found`)
-	}
+	if (!existingItem) throw new Error(`Item "${action.name}" not found`)
 
 	await tx.shoppingListItem.delete({
 		where: { id: existingItem.id },
@@ -115,9 +108,7 @@ export async function handleCompleteAction(
 		},
 	})
 
-	if (!existingItem) {
-		throw new Error(`Item "${action.name}" not found`)
-	}
+	if (!existingItem) throw new Error(`Item "${action.name}" not found`)
 
 	await tx.shoppingListItem.update({
 		where: { id: existingItem.id },

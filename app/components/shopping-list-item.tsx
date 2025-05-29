@@ -35,10 +35,15 @@ export function ShoppingListItem({
 	)
 
 	useEffect(() => {
-		if (!updateItemMutation.isPending) {
-			setLocalAmount(item.amount)
-		}
+		if (!updateItemMutation.isPending) setLocalAmount(item.amount)
 	}, [item.amount, updateItemMutation.isPending])
+
+	useEffect(
+		() => () => {
+			debouncedUpdateRef.current.cancel()
+		},
+		[],
+	)
 
 	const handleAmountChange = useCallback(
 		(e: ChangeEvent<HTMLInputElement>) => {

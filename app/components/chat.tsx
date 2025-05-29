@@ -4,8 +4,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { type FormEvent, useEffect, useRef, useTransition } from 'react'
 import { useTRPC } from '~/lib/trpc/react'
-import { type Message, useChatStore } from '~/stores/chat.store'
+import { useChatStore } from '~/stores/chat.store'
 import { cn } from '~/utils/cn'
+import { ChatMessage } from './chat-message'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 
@@ -28,14 +29,15 @@ export function Chat({ className }: Readonly<ChatProps>) {
 		trpc.assistant.addToShoppingList.mutationOptions(),
 	)
 
-	const { mutateAsync: executeShoppingListActions } = useMutation({
-		...trpc.shoppingList.executeActions.mutationOptions(),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: trpc.shoppingList.getItems.queryKey(),
-			})
-		},
-	})
+	const { mutateAsync: executeShoppingListActions } = useMutation(
+		trpc.shoppingList.executeActions.mutationOptions({
+			onSuccess: () => {
+				queryClient.invalidateQueries({
+					queryKey: trpc.shoppingList.getItems.queryKey(),
+				})
+			},
+		}),
+	)
 
 	useEffect(() => {
 		if (messages.length > 0 && prevMessagesLengthRef.current === 0) {
@@ -175,39 +177,5 @@ export function Chat({ className }: Readonly<ChatProps>) {
 				</form>
 			</div>
 		</section>
-	)
-}
-
-interface ChatMessageProps {
-	message: Message
-}
-
-function ChatMessage({ message }: Readonly<ChatMessageProps>) {
-	const isAssistant = message.role === 'assistant'
-
-	return (
-		<div className={cn('flex', isAssistant ? 'justify-start' : 'justify-end')}>
-			<div
-				className={cn(
-					'max-w-[80%] rounded-lg px-4 py-2 text-sm',
-					isAssistant
-						? 'bg-muted text-muted-foreground'
-						: 'bg-primary text-primary-foreground',
-				)}
-			>
-				<p className="whitespace-pre-wrap">{message.content}</p>
-				<time
-					className={cn(
-						'mt-1 block text-xs opacity-70',
-						isAssistant ? 'text-muted-foreground' : 'text-primary-foreground',
-					)}
-				>
-					{message.createdAt.toLocaleTimeString([], {
-						hour: '2-digit',
-						minute: '2-digit',
-					})}
-				</time>
-			</div>
-		</div>
 	)
 }
