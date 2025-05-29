@@ -16,9 +16,9 @@ const createCaller = createCallerFactory(appRouter)
 export const caller = async (loaderArgs: LoaderFunctionArgs) =>
 	createCaller(await createContext({ headers: loaderArgs.request.headers }))
 
-export async function createTRPC(opts: { headers: Headers }) {
+export async function createTRPC(loaderArgs: LoaderFunctionArgs) {
 	return createTRPCOptionsProxy({
-		ctx: () => createTRPCContext(opts),
+		ctx: () => createContext({ headers: loaderArgs.request.headers }),
 		queryClient: getQueryClient,
 		router: appRouter,
 	})
