@@ -1,21 +1,19 @@
-'use client'
-
+import { useQuery } from '@tanstack/react-query'
 import { type FormEvent, useRef } from 'react'
-import { useShoppingListStore } from '~/stores/shopping-list.store'
-import { cn } from '~/utils/cn'
+import { useAddItemMutation } from '~/hooks/use-add-item-mutation'
+import { useTRPC } from '~/lib/trpc/react'
+import { ShoppingListItem } from './shopping-list-item'
 import { Button } from './ui/button'
-import { Checkbox } from './ui/checkbox'
 import { Input } from './ui/input'
-import { Label } from './ui/label'
 
 export function ShoppingList() {
 	const formRef = useRef<HTMLFormElement>(null)
-	const items = useShoppingListStore(state =>
-		state.items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+	const trpc = useTRPC()
+	const addItemMutation = useAddItemMutation()
+
+	const { data: items = [] } = useQuery(
+		trpc.shoppingList.getItems.queryOptions(),
 	)
-	const addItem = useShoppingListStore(state => state.addItem)
-	const completeItem = useShoppingListStore(state => state.completeItem)
-	const updateItemAmount = useShoppingListStore(state => state.updateItemAmount)
 
 	function handleSubmit(event: FormEvent) {
 		event.preventDefault()
@@ -24,7 +22,7 @@ export function ShoppingList() {
 		const name = formData.get('name') as string
 		const amount = Number(formData.get('amount')) ?? 1
 
-		addItem({ name, amount })
+		addItemMutation.mutate({ name, amount })
 		formRef.current?.reset()
 	}
 
@@ -49,43 +47,19 @@ export function ShoppingList() {
 						defaultValue="1"
 						className="w-24"
 					/>
-					<Button type="submit">Add</Button>
+					<Button type="submit" disabled={addItemMutation.isPending}>
+						{addItemMutation.isPending ? 'Adding...' : 'Add'}
+					</Button>
 				</form>
 
 				<ul className="flex flex-col gap-2">
-					{items.map(item => (
-						<li
-							key={item.id}
-							className={cn(
-								'flex items-center gap-2 rounded-md bg-stone-900 px-3 py-2 transition-opacity',
-								item.isCompleted ? 'opacity-50' : 'opacity-100',
-							)}
-						>
-							<Checkbox
-								id={item.id}
-								checked={item.isCompleted}
-								onCheckedChange={() => completeItem(item.id)}
-							/>
-							<Label
-								htmlFor={item.id}
-								className={cn(
-									'flex-1 text-md transition-all duration-300',
-									item.isCompleted && 'line-through',
-								)}
-							>
-								{item.name}
-							</Label>
-							<Input
-								type="number"
-								value={item.amount}
-								onChange={e =>
-									updateItemAmount(item.id, Number(e.target.value) || 1)
-								}
-								min="1"
-								className="h-8 w-16 text-sm"
-							/>
+					{items.length === 0 ? (
+						<li className="rounded-md bg-stone-900 px-3 py-4 text-center text-stone-400">
+							No items in your shopping list yet. Add some items above!
 						</li>
-					))}
+					) : (
+						items.map(item => <ShoppingListItem key={item.id} item={item} />)
+					)}
 				</ul>
 			</div>
 		</section>

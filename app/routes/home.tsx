@@ -5,7 +5,6 @@ import { auth } from '~/lib/auth.server'
 import { getQueryClient } from '~/lib/trpc/react'
 import { caller, createTRPC } from '~/lib/trpc/server'
 import type { Route } from './+types/home'
-import Example from './example'
 
 export function meta() {
 	return [
@@ -17,8 +16,6 @@ export function meta() {
 export async function loader(loaderArgs: Route.LoaderArgs) {
 	const queryClient = getQueryClient()
 	const trpc = await createTRPC(loaderArgs)
-
-	await queryClient.prefetchQuery(trpc.assistant.hello.queryOptions())
 
 	const session = await auth.api.getSession({
 		headers: loaderArgs.request.headers,
@@ -42,6 +39,11 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 			})
 	}
 
+	// Prefetch shopping list items for authenticated users
+	if (session?.user) {
+		await queryClient.prefetchQuery(trpc.shoppingList.getItems.queryOptions())
+	}
+
 	return {
 		queryClient: dehydrate(queryClient),
 	}
@@ -56,7 +58,6 @@ export default function Home({
 				<ShoppingList />
 				<Chat />
 			</main>
-			<Example />
 		</HydrationBoundary>
 	)
 }

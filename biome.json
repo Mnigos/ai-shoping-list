@@ -10,6 +10,7 @@
 		"ignore": [
 			"**/coverage/**",
 			"**/dist/**",
+			"**/build/**",
 			"**/@generated/**",
 			"**/.next/**",
 			"**/out/**",

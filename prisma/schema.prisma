@@ -10,16 +10,17 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  isAnonymous   Boolean?  @default(false)
-  sessions      Session[]
-  accounts      Account[]
+  id               String    @id @default(cuid())
+  name             String
+  email            String
+  emailVerified    Boolean   @default(false)
+  image            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  isAnonymous      Boolean?  @default(false)
+  sessions         Session[]
+  accounts         Account[]
+  shoppingListItems ShoppingListItem[]
 
   @@unique([email])
   @@map("user")
@@ -72,3 +73,19 @@ model Verification {
 
   @@map("verification")
 }
+
+model ShoppingListItem {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Int      @default(1)
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("shopping_list_item")
+  @@index([userId])
+  @@unique([userId, name])
+}
+

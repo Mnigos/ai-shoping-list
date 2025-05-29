@@ -1,11 +1,10 @@
 'use client'
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { type FormEvent, useEffect, useRef, useTransition } from 'react'
 import { useTRPC } from '~/lib/trpc/react'
 import { type Message, useChatStore } from '~/stores/chat.store'
-import { useShoppingListStore } from '~/stores/shopping-list.store'
 import { cn } from '~/utils/cn'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
@@ -21,19 +20,22 @@ export function Chat({ className }: Readonly<ChatProps>) {
 	const prevMessagesLengthRef = useRef(0)
 	const messages = useChatStore(state => state.messages)
 	const addMessage = useChatStore(state => state.addMessage)
-	const {
-		items,
-		addOrUpdateItem,
-		removeItemByName,
-		updateItemByName,
-		completeItemByName,
-	} = useShoppingListStore()
 	const trpc = useTRPC()
+	const queryClient = useQueryClient()
 	const [isLoading, startTransition] = useTransition()
 
 	const { mutateAsync: addToShoppingList } = useMutation(
 		trpc.assistant.addToShoppingList.mutationOptions(),
 	)
+
+	const { mutateAsync: executeShoppingListActions } = useMutation({
+		...trpc.shoppingList.executeActions.mutationOptions(),
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: trpc.shoppingList.getItems.queryKey(),
+			})
+		},
+	})
 
 	useEffect(() => {
 		if (messages.length > 0 && prevMessagesLengthRef.current === 0) {
@@ -58,6 +60,7 @@ export function Chat({ className }: Readonly<ChatProps>) {
 		const formData = new FormData(event.target as HTMLFormElement)
 		const prompt = formData.get('prompt') as string
 
+		// 1. Add user message to chat store
 		addMessage({
 			id: crypto.randomUUID(),
 			content: prompt.trim(),
@@ -68,65 +71,47 @@ export function Chat({ className }: Readonly<ChatProps>) {
 		formRef.current?.reset()
 
 		startTransition(async () => {
-			const currentItems = items.map(item => ({
-				name: item.name,
-				amount: item.amount,
-				isCompleted: Boolean(item.isCompleted),
-			}))
+			// 2. Get actions from assistant (no currentItems needed)
+			const result = await addToShoppingList({ prompt })
 
-			const result = await addToShoppingList({
-				prompt,
-				currentItems,
-			})
+			// 3. Collect actions and assistant message
+			const allActions: Array<{
+				action: 'add' | 'update' | 'delete' | 'complete'
+				name: string
+				amount?: number
+			}> = []
+			let assistantMessage = ''
 
-			const processedItems = new Set<string>()
-			let assistantMessageAdded = false
-
-			for await (const { actions, message } of result) {
-				if (message && !assistantMessageAdded) {
-					addMessage({
-						id: crypto.randomUUID(),
-						content: message,
-						role: 'assistant',
-						createdAt: new Date(),
-					})
-					assistantMessageAdded = true
-				}
-
-				if (actions && Array.isArray(actions)) {
-					for (const actionItem of actions) {
-						if (actionItem?.name && actionItem?.action) {
-							const itemKey = `${actionItem.action}-${actionItem.name.toLowerCase()}`
-
-							if (!processedItems.has(itemKey)) {
-								switch (actionItem.action) {
-									case 'add':
-										if (actionItem.amount) {
-											addOrUpdateItem({
-												name: actionItem.name,
-												amount: actionItem.amount,
-											})
-										}
-										break
-									case 'update':
-										if (actionItem.amount) {
-											updateItemByName(actionItem.name, {
-												amount: actionItem.amount,
-											})
-										}
-										break
-									case 'delete':
-										removeItemByName(actionItem.name)
-										break
-									case 'complete':
-										completeItemByName(actionItem.name)
-										break
-								}
-								processedItems.add(itemKey)
-							}
+			for await (const chunk of result) {
+				if (chunk?.actions && Array.isArray(chunk.actions)) {
+					for (const action of chunk.actions) {
+						if (action?.action && action?.name) {
+							allActions.push({
+								action: action.action,
+								name: action.name,
+								amount: action.amount,
+							})
 						}
 					}
 				}
+				if (chunk?.message) {
+					assistantMessage = chunk.message
+				}
+			}
+
+			// 4. Add assistant message to chat store
+			if (assistantMessage) {
+				addMessage({
+					id: crypto.randomUUID(),
+					content: assistantMessage,
+					role: 'assistant',
+					createdAt: new Date(),
+				})
+			}
+
+			// 5. Execute shopping list actions in database
+			if (allActions.length > 0) {
+				await executeShoppingListActions({ actions: allActions })
 			}
 		})
 	}
