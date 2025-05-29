@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-interface Message {
+export interface Message {
 	id: string
 	content: string
 	role: 'user' | 'assistant'
