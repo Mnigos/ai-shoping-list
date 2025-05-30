@@ -3,7 +3,7 @@ import { Chat } from '~/components/chat'
 import { ShoppingList } from '~/components/shopping-list'
 import { auth } from '~/lib/auth.server'
 import { getQueryClient } from '~/lib/trpc/react'
-import { caller, createTRPC } from '~/lib/trpc/server'
+import { createTRPC } from '~/lib/trpc/server'
 import type { Route } from './+types/home'
 
 export function meta() {
