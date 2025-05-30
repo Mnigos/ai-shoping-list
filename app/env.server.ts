@@ -13,6 +13,8 @@ const envSchema = z.object({
 })
 
 function createEnv() {
+	if (process.env.GITHUB_ACTIONS === 'true') return process.env as Env
+
 	const parsed = envSchema.safeParse(process.env)
 
 	if (!parsed.success) {
