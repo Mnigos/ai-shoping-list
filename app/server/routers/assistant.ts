@@ -43,8 +43,7 @@ const ShoppingListActionSchema = z.object({
 })
 
 export const assistantRouter = {
-	hello: protectedProcedure.query(async () => 'Hello, world!'),
-	addToShoppingList: protectedProcedure
+	chat: protectedProcedure
 		.input(z.object({ prompt: z.string() }))
 		.mutation(async function* ({ ctx, input: { prompt } }) {
 			const currentItems = await ctx.prisma.shoppingListItem.findMany({

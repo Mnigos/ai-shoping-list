@@ -26,7 +26,7 @@ export function Chat({ className }: Readonly<ChatProps>) {
 	const [isLoading, startTransition] = useTransition()
 
 	const { mutateAsync: addToShoppingList } = useMutation(
-		trpc.assistant.addToShoppingList.mutationOptions(),
+		trpc.assistant.chat.mutationOptions(),
 	)
 
 	const { mutateAsync: executeShoppingListActions } = useMutation(
