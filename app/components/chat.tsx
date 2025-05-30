@@ -74,22 +74,30 @@ export function Chat({ className }: Readonly<ChatProps>) {
 
 		startTransition(async () => {
 			try {
-				// 2. Get actions from assistant (no currentItems needed)
-				const result = await addToShoppingList({ prompt })
+				// 2. Get actions from assistant, including recent conversation history
+				const result = await addToShoppingList({
+					prompt,
+					recentMessages: messages.slice(-4), // Send only last 4 messages for context
+				})
 
 				// 3. Collect actions and assistant message
-				const allActions: Array<{
-					action: 'add' | 'update' | 'delete' | 'complete'
-					name: string
-					amount?: number
-				}> = []
+				const actionsMap = new Map<
+					string,
+					{
+						action: 'add' | 'update' | 'delete' | 'complete'
+						name: string
+						amount?: number
+					}
+				>()
 				let assistantMessage = ''
 
 				for await (const chunk of result) {
 					if (chunk?.actions && Array.isArray(chunk.actions)) {
 						for (const action of chunk.actions) {
 							if (action?.action && action?.name) {
-								allActions.push({
+								// Use item name + action as key to prevent duplicates
+								const key = `${action.name}-${action.action}`
+								actionsMap.set(key, {
 									action: action.action,
 									name: action.name,
 									amount: action.amount,
@@ -101,6 +109,8 @@ export function Chat({ className }: Readonly<ChatProps>) {
 						assistantMessage = chunk.message
 					}
 				}
+
+				const allActions = Array.from(actionsMap.values())
 
 				// 4. Add assistant message to chat store
 				if (assistantMessage) {
