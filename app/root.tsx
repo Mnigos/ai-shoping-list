@@ -8,11 +8,13 @@ import {
 	isRouteErrorResponse,
 } from 'react-router'
 
-import type { Route } from './+types/root'
-import { clientEnv } from './env.client'
-import './app.css'
 import type { PropsWithChildren } from 'react'
+import type { Route } from './+types/root'
+import { NavigationBar } from './components/navigation-bar'
+import { clientEnv } from './env.client'
 import { TRPCReactProvider } from './lib/trpc/react'
+
+import './app.css'
 
 export const links: Route.LinksFunction = () => [
 	{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -37,6 +39,7 @@ export function Layout({ children }: PropsWithChildren) {
 				<Links />
 			</head>
 			<body className="dark">
+				<NavigationBar />
 				{children}
 				<ScrollRestoration />
 				<Scripts />
