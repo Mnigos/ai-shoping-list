@@ -3,12 +3,19 @@ import { useState } from 'react'
 import { cn } from '~/utils/cn'
 import { SignInModal } from './auth/sign-in-modal'
 import { SignUpModal } from './auth/sign-up-modal'
+import {
+	NavigationBarUserPopover,
+	type NavigationBarUserPopoverProps,
+} from './navigation-bar-user-popover'
 import { Button } from './ui/button'
 
-interface NavigationBarProps extends ComponentProps<'nav'> {}
+interface NavigationBarProps
+	extends ComponentProps<'nav'>,
+		Partial<NavigationBarUserPopoverProps> {}
 
 export function NavigationBar({
 	className,
+	user,
 	...props
 }: Readonly<NavigationBarProps>) {
 	const [showSignInModal, setShowSignInModal] = useState(false)
@@ -24,21 +31,27 @@ export function NavigationBar({
 				{...props}
 			>
 				<div className="container mx-auto flex h-16 items-center justify-between px-4">
-					<div className="flex items-center space-x-2">
+					<header className="flex items-center space-x-2">
 						<h1 className="font-bold text-xl">AI Shopping List</h1>
-					</div>
+					</header>
 
 					<div className="flex items-center space-x-2">
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={() => setShowSignInModal(true)}
-						>
-							Sign In
-						</Button>
-						<Button size="sm" onClick={() => setShowSignUpModal(true)}>
-							Sign Up
-						</Button>
+						{user && user.name !== 'Anonymous' ? (
+							<NavigationBarUserPopover user={user} />
+						) : (
+							<>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => setShowSignInModal(true)}
+								>
+									Sign In
+								</Button>
+								<Button size="sm" onClick={() => setShowSignUpModal(true)}>
+									Sign Up
+								</Button>
+							</>
+						)}
 					</div>
 				</div>
 			</nav>

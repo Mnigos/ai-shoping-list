@@ -10,11 +10,12 @@ import {
 
 import type { PropsWithChildren } from 'react'
 import type { Route } from './+types/root'
-import { NavigationBar } from './components/navigation-bar'
 import { clientEnv } from './env.client'
 import { TRPCReactProvider } from './lib/trpc/react'
 
 import './app.css'
+import { NavigationBar } from './components/navigation-bar'
+import { auth } from './lib/auth.server'
 
 export const links: Route.LinksFunction = () => [
 	{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -29,6 +30,32 @@ export const links: Route.LinksFunction = () => [
 	},
 ]
 
+export async function loader(loaderArgs: Route.LoaderArgs) {
+	const session = await auth.api.getSession({
+		headers: loaderArgs.request.headers,
+	})
+
+	if (!session) {
+		const { headers, response } = await auth.api.signInAnonymous({
+			headers: loaderArgs.request.headers,
+			returnHeaders: true,
+		})
+
+		const setCookieHeader = headers.get('set-cookie')
+
+		if (setCookieHeader)
+			throw new Response(JSON.stringify(response), {
+				status: 302,
+				headers: {
+					Location: loaderArgs.request.url,
+					'Set-Cookie': setCookieHeader,
+				},
+			})
+	}
+
+	return session
+}
+
 export function Layout({ children }: PropsWithChildren) {
 	return (
 		<html lang="en">
@@ -39,7 +66,6 @@ export function Layout({ children }: PropsWithChildren) {
 				<Links />
 			</head>
 			<body className="dark">
-				<NavigationBar />
 				{children}
 				<ScrollRestoration />
 				<Scripts />
@@ -48,9 +74,11 @@ export function Layout({ children }: PropsWithChildren) {
 	)
 }
 
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
 	return (
 		<TRPCReactProvider>
+			<NavigationBar user={loaderData?.user} />
+
 			<Outlet />
 
 			<ReactQueryDevtools />
