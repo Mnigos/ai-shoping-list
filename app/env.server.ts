@@ -10,6 +10,8 @@ const envSchema = z.object({
 	VERCEL_URL: z.string().optional(),
 	BETTER_AUTH_URL: z.string().url().default('http://localhost:5173'),
 	BETTER_AUTH_SECRET: z.string(),
+	GOOGLE_CLIENT_ID: z.string(),
+	GOOGLE_CLIENT_SECRET: z.string(),
 })
 
 function createEnv() {
