@@ -3,11 +3,11 @@
 import { LoaderCircle } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { z } from 'zod'
-import { GoogleIcon } from '~/assets/icons'
 import { authClient } from '~/lib/auth-client'
 import { Button } from '../ui/button'
 import { Message, useAppForm } from '../ui/form'
 import { Input } from '../ui/input'
+import { ContinueWithGoogleButton } from './continue-with-google-button'
 
 interface SignInFormProps {
 	onSuccess?: () => void
@@ -15,7 +15,6 @@ interface SignInFormProps {
 
 export function SignInForm({ onSuccess }: Readonly<SignInFormProps>) {
 	const [isLoading, startTransition] = useTransition()
-	const [isGoogleLoading, startGoogleTransition] = useTransition()
 	const [error, setError] = useState<string>('')
 	const form = useAppForm({
 		defaultValues: {
@@ -32,6 +31,7 @@ export function SignInForm({ onSuccess }: Readonly<SignInFormProps>) {
 				{
 					onSuccess: () => {
 						onSuccess?.()
+						window.location.reload()
 					},
 					onError: ({ error }) => {
 						setError(error.message)
@@ -49,48 +49,10 @@ export function SignInForm({ onSuccess }: Readonly<SignInFormProps>) {
 		})
 	}
 
-	function handleGoogleSignIn() {
-		setError('')
-		startGoogleTransition(async () => {
-			await authClient.signIn.social(
-				{
-					provider: 'google',
-					callbackURL: '/',
-				},
-				{
-					onSuccess: () => {
-						onSuccess?.()
-					},
-					onError: ({ error }) => {
-						setError(error.message)
-					},
-				},
-			)
-		})
-	}
-
 	return (
 		<form.AppForm>
 			<div className="flex w-80 flex-col gap-4">
-				<Button
-					type="button"
-					variant="outline"
-					onClick={handleGoogleSignIn}
-					disabled={isGoogleLoading || isLoading}
-					className="w-full"
-				>
-					{isGoogleLoading ? (
-						<>
-							<LoaderCircle className="animate-spin" />
-							Signing in...
-						</>
-					) : (
-						<>
-							<GoogleIcon className="h-4 w-4" />
-							Sign in with Google
-						</>
-					)}
-				</Button>
+				<ContinueWithGoogleButton setError={setError} onSuccess={onSuccess} />
 
 				<div className="relative">
 					<div className="absolute inset-0 flex items-center">
@@ -148,11 +110,7 @@ export function SignInForm({ onSuccess }: Readonly<SignInFormProps>) {
 						)}
 					</form.AppField>
 
-					<Button
-						type="submit"
-						disabled={isLoading || isGoogleLoading}
-						className="mt-2"
-					>
+					<Button type="submit" disabled={isLoading} className="mt-2">
 						{isLoading ? (
 							<>
 								<LoaderCircle className="animate-spin" />

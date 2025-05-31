@@ -11,6 +11,7 @@ export interface Message {
 interface ChatStore {
 	messages: Message[]
 	addMessage: (message: Message) => void
+	clearMessages: () => void
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -21,6 +22,7 @@ export const useChatStore = create<ChatStore>()(
 				set(state => ({
 					messages: [...state.messages, message],
 				})),
+			clearMessages: () => set({ messages: [] }),
 		}),
 		{
 			name: 'chat',
