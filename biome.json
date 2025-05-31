@@ -38,6 +38,12 @@
 					"level": "warn"
 				}
 			},
+			"correctness": {
+				"noUnusedImports": {
+					"level": "warn",
+					"fix": "safe"
+				}
+			},
 			"style": {
 				"noNonNullAssertion": {
 					"level": "off"
