@@ -92,40 +92,33 @@ export function Chat({ className }: Readonly<ChatProps>) {
 				let assistantMessage = ''
 
 				for await (const chunk of result) {
-					if (chunk?.actions && Array.isArray(chunk.actions)) {
-						for (const action of chunk.actions) {
-							if (action?.action && action?.name) {
+					if (chunk?.actions && Array.isArray(chunk.actions))
+						for (const chunkAction of chunk.actions)
+							if (chunkAction?.action && chunkAction?.name)
 								// Use item name + action as key to prevent duplicates
-								const key = `${action.name}-${action.action}`
-								actionsMap.set(key, {
-									action: action.action,
-									name: action.name,
-									amount: action.amount,
+								actionsMap.set(`${chunkAction.name}-${chunkAction.action}`, {
+									action: chunkAction.action,
+									name: chunkAction.name,
+									amount: chunkAction.amount,
 								})
-							}
-						}
-					}
-					if (chunk?.message) {
-						assistantMessage = chunk.message
-					}
+
+					if (chunk?.message) assistantMessage = chunk.message
 				}
 
 				const allActions = Array.from(actionsMap.values())
 
 				// 4. Add assistant message to chat store
-				if (assistantMessage) {
+				if (assistantMessage)
 					addMessage({
 						id: crypto.randomUUID(),
 						content: assistantMessage,
 						role: 'assistant',
 						createdAt: new Date(),
 					})
-				}
 
 				// 5. Execute shopping list actions in database
-				if (allActions.length > 0) {
+				if (allActions.length > 0)
 					await executeShoppingListActions({ actions: allActions })
-				}
 			} catch (error) {
 				console.error('Error processing chat message:', error)
 
