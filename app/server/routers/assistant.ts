@@ -112,14 +112,22 @@ export const assistantRouter = {
            - If user wants to remove ALL of an item, use delete action without amount
            - If user wants to remove SOME of an item (partial removal), use update action with the remaining amount
            - For example: if there are 5 apples and user says "remove 2 apples", use update action with amount: 3
+        7. CRITICAL: Only perform actions on items that actually exist in the current shopping list
+           - For "update", "delete", or "complete" actions: only include items that are currently in the list
+           - If user tries to modify/remove items that don't exist, acknowledge this in your message
+           - Example: if user says "remove bananas" but bananas aren't in the list, don't include a delete action for bananas
+        8. When items don't exist but user tries to modify them:
+           - Don't create actions for non-existing items (except for "add" actions)
+           - In your message, inform the user which items weren't found
+           - Suggest adding the items first if appropriate
         
         Examples:
         - "Add 3 sprite cans" -> actions: [{action: "add", name: "sprite cans", amount: 3}]
         - "Add 2 apples and 1 milk" -> actions: [{action: "add", name: "apples", amount: 2}, {action: "add", name: "milk", amount: 1}]
-        - "Remove bananas and mark bread as done" -> actions: [{action: "delete", name: "bananas"}, {action: "complete", name: "bread"}]
-        - "Update milk to 2 bottles and add 3 oranges" -> actions: [{action: "update", name: "milk", amount: 2}, {action: "add", name: "oranges", amount: 3}]
+        - "Remove bananas and mark bread as done" -> only include actions for items that exist in the current list
+        - "Update milk to 2 bottles and add 3 oranges" -> only update milk if it exists, always allow add for oranges
         - "Remove 2 apples" (when there are 5 apples) -> actions: [{action: "update", name: "apples", amount: 3}]
-        - "Remove all apples" -> actions: [{action: "delete", name: "apples"}]
+        - "Remove all apples" -> actions: [{action: "delete", name: "apples"}] (only if apples exist)
 
         ${currentItemsText}${conversationHistory}
         

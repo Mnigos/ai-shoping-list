@@ -36,7 +36,7 @@ export function NavigationBar({
 					</header>
 
 					<div className="flex items-center space-x-2">
-						{user && user.name !== 'Anonymous' ? (
+						{user && !user.isAnonymous ? (
 							<NavigationBarUserPopover user={user} />
 						) : (
 							<>

@@ -1,4 +1,4 @@
-import type { User } from 'better-auth'
+import type { UserWithAnonymous } from 'better-auth/plugins'
 import { LogOut, User as UserIcon } from 'lucide-react'
 import { authClient } from '~/lib/auth-client'
 import { useChatStore } from '~/stores/chat.store'
@@ -6,7 +6,7 @@ import { Button } from './ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 
 export interface NavigationBarUserPopoverProps {
-	user: Pick<User, 'name' | 'email'>
+	user: Pick<UserWithAnonymous, 'name' | 'email' | 'isAnonymous'>
 }
 
 export function NavigationBarUserPopover({

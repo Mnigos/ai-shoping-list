@@ -107,18 +107,20 @@ export function Chat({ className }: Readonly<ChatProps>) {
 
 				const allActions = Array.from(actionsMap.values())
 
-				// 4. Add assistant message to chat store
-				if (assistantMessage)
+				// 4. Execute shopping list actions in database FIRST
+				if (allActions.length > 0) {
+					await executeShoppingListActions({ actions: allActions })
+				}
+
+				// 5. Only add assistant message to chat store AFTER successful action execution
+				if (assistantMessage) {
 					addMessage({
 						id: crypto.randomUUID(),
 						content: assistantMessage,
 						role: 'assistant',
 						createdAt: new Date(),
 					})
-
-				// 5. Execute shopping list actions in database
-				if (allActions.length > 0)
-					await executeShoppingListActions({ actions: allActions })
+				}
 			} catch (error) {
 				console.error('Error processing chat message:', error)
 
