@@ -19,3 +19,4 @@ alwaysApply: true
 - When adding new UI components always format them according to [creating-components.mdc](mdc:.cursor/rules/creating-components.mdc)
 - Prefer interfaces over types whenever possible
 - !!! Do not add comments to generated code unless it's really complex
+- Always assume that dev server is already running and don't run `npm run dev` by yourself
