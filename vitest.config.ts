@@ -10,6 +10,8 @@ export default mergeConfig(
 			resolveSnapshotPath: (testPath, snapshotExtension) =>
 				`./tests/snapshots/${testPath.split('/').at(-1)}${snapshotExtension}`,
 			globals: true,
+			environment: 'happy-dom',
+			setupFiles: './tests/vitest.setup.happy-dom.ts',
 			coverage: {
 				provider: 'v8',
 				reporter: ['text', 'json', 'html', 'lcov'],
