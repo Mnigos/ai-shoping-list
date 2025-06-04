@@ -1,0 +1,76 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# **Project Architecture & Directory Structure**
+
+## **Core Application Structure**
+
+- **`app/routes/`** - All page routes following React Router conventions
+  - Route-specific components and logic
+  - Each route should have clear separation of concerns
+
+- **`app/lib/`** - Core library code and external service integrations
+  - `trpc/` - tRPC client and server configuration
+  - Prisma client setup and database utilities
+  - Authentication client configurations
+
+- **`app/modules/`** - Feature-based modules with domain-specific logic
+  - `chat/` - Chat functionality with components, server logic, and stores
+  - `shopping-list/` - Shopping list features with components and server helpers
+  - Each module should be self-contained with its own:
+    - `components/` - Module-specific React components
+    - `server/` - Server-side logic and API handlers
+    - `stores/` - State management (when applicable)
+
+- **`app/shared/`** - Shared resources across the application
+  - `assets/icons/` - SVG icons and static assets
+  - `components/` - Reusable UI components
+    - `auth/` - Authentication-related components
+    - `ui/` - Generic UI components following [components.json](mdc:components.json)
+  - `hooks/` - Custom React hooks with helper utilities
+  - `utils/` - Utility functions used across the repository
+
+## **Supporting Infrastructure**
+
+- **`prisma/`** - Database schema and migrations
+  - `migrations/` - Database migration files
+  - [schema.prisma](mdc:prisma/schema.prisma) - Database schema definition
+
+- **`public/`** - Static assets served directly
+  - `.well-known/` - Well-known URIs for app-specific protocols
+  - Images and other static resources
+
+- **`tests/`** - Test files following [testing guidelines](mdc:.cursor/rules/testing.mdc)
+
+## **Configuration Files**
+
+- **Root Level Configuration:**
+  - [package.json](mdc:package.json) - Dependencies and scripts
+  - [tsconfig.json](mdc:tsconfig.json) - TypeScript configuration
+  - [vite.config.ts](mdc:vite.config.ts) - Vite build configuration
+  - [react-router.config.ts](mdc:react-router.config.ts) - React Router setup
+
+## **Architectural Principles**
+
+- **Feature-Based Organization:** Group related functionality in modules
+- **Shared Resource Pattern:** Common components and utilities in `shared/`
+- **Clear Separation:** Distinguish between client (`components/`) and server (`server/`) code
+- **Configuration Consolidation:** Keep all config files at root level for easy discovery
+
+## **File Placement Guidelines**
+
+```typescript
+// ✅ DO: Place feature-specific components in modules
+app/modules/shopping-list/components/ShoppingListItem.tsx
+
+// ✅ DO: Place reusable components in shared
+app/shared/components/ui/Button.tsx
+
+// ✅ DO: Keep route components in routes
+app/routes/shopping-lists.tsx
+
+// ❌ DON'T: Mix feature-specific code in shared
+app/shared/components/ShoppingListSpecificButton.tsx
+```

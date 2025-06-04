@@ -1,16 +1,307 @@
 ---
 description: Testing guidelines and conventions for spec files using Vitest
-globs: *.spec.tsx,*.spec.ts
+globs: 
+alwaysApply: false
+---
+---
+description: 
+globs: 
 alwaysApply: false
 ---
 # Testing
 
-- This project uses vitest for testing
-- Use Vitest for faster testing in Vite-based projects
-- Implement the test.each pattern for parameterized tests
-- Use the setup files for global test configuration
-- Implement mocking for modules and dependencies
-- Always create variables with repeated data like id, limit, count etc.
-- Always use `test` instead of `it`
-- Global mode is enabled so do not import stuff like `test` from vitest
-- Don't import describe, test etc. global mode is enabled
+- **Framework Configuration**
+  - This project uses Vitest as the primary testing framework
+  - Global mode is enabled - do not import `test`, `describe`, `beforeEach`, `afterEach`
+  - Always use `test` instead of `it` for individual test cases
+  - Use happy-dom environment for DOM testing as configured in [tests/vitest.setup.happy-dom.ts](mdc:tests/vitest.setup.happy-dom.ts)
+
+- **File Naming and Structure**
+  - Test files MUST use `.spec.ts` or `.spec.tsx` extension
+  - Place tests alongside the code they test (not in separate test directories)
+  - Test files MUST match the source file name with `.spec` suffix
+
+```typescript
+// ✅ DO: Proper test file structure
+app/modules/chat/server/chat.service.spec.ts
+app/modules/shopping-list/server/shopping-list.service.spec.ts
+
+// ❌ DON'T: Separate test directories or wrong extensions
+tests/chat/chat.service.test.ts
+app/modules/chat/server/chat.service.test.ts
+```
+
+- **Test Function Usage**
+  - Always use `test` instead of `it` for individual test cases
+  - Use `describe` blocks to group related tests by functionality
+  - Use `beforeEach`/`afterEach` for test isolation
+  - Implement `test.each` pattern for parameterized tests
+  - Always create variables for repeated test data (ids, limits, counts)
+
+```typescript
+// ✅ DO: Proper test structure
+describe('ShoppingListService', () => {
+  let service: ShoppingListService
+  const userId = 'test-user-id'
+  const itemId = 'item-123'
+  
+  beforeEach(() => {
+    vi.clearAllMocks()
+    service = new ShoppingListService(mockContext)
+  })
+
+  test('should create item successfully', async () => {
+    // Test implementation
+  })
+
+  test.each([
+    { description: 'should handle special characters', input: 'café ☕' },
+    { description: 'should handle long input', input: 'A'.repeat(1000) },
+    { description: 'should handle empty input', input: '' },
+  ])('$description', async ({ input }) => {
+    // Parameterized test implementation
+  })
+})
+
+// ❌ DON'T: Using 'it' or improper structure
+it('should work', () => {})
+```
+
+- **Mock Implementation Patterns**
+  - Always import `vi` from 'vitest' for mocking functionality
+  - Use `vi.hoisted()` for module-level mocks that need hoisting
+  - Always clear mocks in `beforeEach` using `vi.clearAllMocks()`
+  - Create comprehensive mock objects that match real interfaces
+  - Follow established patterns for database mocking
+
+```typescript
+// ✅ DO: Proper mocking setup
+import { vi } from 'vitest'
+
+const mockStreamObject = vi.hoisted(() => vi.fn())
+vi.mock('ai', () => ({
+  streamObject: mockStreamObject,
+}))
+
+const mockPrisma = {
+  shoppingListItem: {
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+  },
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+// ❌ DON'T: Incomplete mocking or missing cleanup
+const mockPrisma = { findMany: jest.fn() } // Wrong framework
+// Missing vi.clearAllMocks()
+```
+
+- **Async Operations Handling**
+  - Always use async/await for asynchronous operations
+  - Use `mockResolvedValue`/`mockRejectedValue` for promise mocks
+  - Follow established patterns for testing async generators and streams
+
+```typescript
+// ✅ DO: Proper async testing
+test('should handle async operations', async () => {
+  mockPrisma.shoppingListItem.findMany.mockResolvedValue(mockItems)
+  
+  const result = await service.getItems()
+  
+  expect(result).toEqual(mockItems)
+})
+
+test('should handle stream responses', async () => {
+  const mockChunks = [{ actions: [] }]
+  mockStreamObject.mockReturnValue({
+    partialObjectStream: createMockAsyncGenerator(mockChunks),
+  })
+
+  const chunks = []
+  for await (const chunk of service.assistant(input)) {
+    chunks.push(chunk)
+  }
+
+  expect(chunks).toEqual(mockChunks)
+})
+
+// ❌ DON'T: Missing async/await or improper promise handling
+test('should work', () => {
+  service.getItems().then(result => {
+    expect(result).toBeDefined()
+  })
+})
+```
+
+- **Error Testing Patterns**
+  - Test both success and failure scenarios
+  - Test specific error types and messages
+  - Always include edge case testing
+  - Cover all error handling paths
+
+```typescript
+// ✅ DO: Comprehensive error testing
+test('should handle database errors', async () => {
+  const genericError = new Error('Database connection failed')
+  mockPrisma.shoppingListItem.create.mockRejectedValue(genericError)
+
+  await expect(service.addItem(validInput)).rejects.toThrow(
+    'Database connection failed'
+  )
+})
+
+test('should handle not found errors', async () => {
+  const notFoundError = new Error('Record not found')
+  ;(notFoundError as any).code = 'P2025'
+  
+  mockPrisma.shoppingListItem.update.mockRejectedValue(notFoundError)
+
+  await expect(service.updateItem(validInput)).rejects.toThrow(
+    'Record not found'
+  )
+})
+
+// ❌ DON'T: Only testing happy paths
+test('should work', async () => {
+  const result = await service.getItems()
+  expect(result).toBeDefined()
+  // Missing error scenarios
+})
+```
+
+- **Test Data Management**
+  - Always create variables for repeated test data (ids, limits, counts)
+  - Create comprehensive mock objects that match real interfaces
+  - Each test must use independent data sets
+
+```typescript
+// ✅ DO: Proper test data management
+const userId = 'test-user-id'
+const itemId = 'item-123'
+const itemName = 'Test Item'
+const defaultAmount = 5
+
+const mockUser = {
+  id: userId,
+  name: 'Test User',
+  email: 'test@example.com',
+  // ... complete user object
+}
+
+const mockContext: ProtectedContext = {
+  user: mockUser,
+  prisma: mockPrisma as any,
+  env: {} as any,
+}
+
+// ❌ DON'T: Hardcoded values or incomplete mocks
+test('should work', () => {
+  service.addItem({ id: '123', name: 'test' }) // Hardcoded values
+})
+```
+
+- **Boolean Assertions**
+  - Use `.toBeTruthy()` and `.toBeFalsy()` instead of `.toBe(true)` and `.toBe(false)`
+  - These matchers are more flexible and handle JavaScript's truthiness/falsiness correctly
+  - Reserve `.toBe(true)` and `.toBe(false)` only when strict boolean equality is required
+
+```typescript
+// ✅ DO: Use truthy/falsy matchers for boolean-like values
+test('should return truthy value when condition is met', () => {
+  const result = someFunction()
+  expect(result).toBeTruthy()
+})
+
+test('should return falsy value when condition is not met', () => {
+  const result = someFunction()
+  expect(result).toBeFalsy()
+})
+
+test('should handle React hook boolean states', () => {
+  const { result } = renderHook(() => useMediaQuery('md'))
+  expect(result.current).toBeTruthy() // or toBeFalsy()
+})
+
+// ❌ DON'T: Use strict boolean equality unless specifically needed
+test('should return value', () => {
+  expect(result).toBe(true) // Too strict, use toBeTruthy() instead
+  expect(result).toBe(false) // Too strict, use toBeFalsy() instead
+})
+
+// ✅ DO: Use strict equality only when boolean type is critical
+test('should return exact boolean value from API', () => {
+  const apiResponse = { success: true }
+  expect(apiResponse.success).toBe(true) // When exact boolean matters
+})
+```
+
+- **Test Organization and Coverage**
+  - Group tests by functionality using descriptive `describe` blocks
+  - Test descriptions must clearly state what is being tested
+  - Each test must be independent and properly isolated
+  - All public methods must have test coverage
+  - All conditional logic branches must be tested
+  - Boundary conditions and edge cases are mandatory
+
+```typescript
+// ✅ DO: Proper test organization
+describe('ShoppingListService', () => {
+  describe('getItems', () => {
+    test('should fetch all items for the current user ordered by creation date', async () => {
+      // Implementation
+    })
+
+    test('should return empty array when no items exist', async () => {
+      // Implementation
+    })
+  })
+
+  describe('addItem', () => {
+    test('should create a new item successfully', async () => {
+      // Implementation
+    })
+
+    test('should handle validation errors', async () => {
+      // Implementation
+    })
+  })
+})
+
+// ❌ DON'T: Poor organization or unclear names
+describe('tests', () => {
+  test('it works', () => {})
+  test('another test', () => {})
+})
+```
+
+- **Test Execution Commands**
+  - Use `npm run test` for watch mode during development
+  - Use `npm run test:run` for single test execution
+  - Use `npm run test:coverage` for coverage reports
+  - Always use existing [package.json](mdc:package.json) scripts
+
+- **Configuration Adherence**
+  - Follow settings defined in [vitest.config.ts](mdc:vitest.config.ts)
+  - Respect configuration in [tests/vitest.setup.happy-dom.ts](mdc:tests/vitest.setup.happy-dom.ts)
+  - Honor coverage exclusion patterns for non-testable files
+
+- **Best Practices**
+  - Every test must be deterministic, isolated, and comprehensive
+  - Follow established patterns demonstrated in existing spec files like [chat.service.spec.ts](mdc:app/modules/chat/server/chat.service.spec.ts) and [shopping-list.service.spec.ts](mdc:app/modules/shopping-list/server/shopping-list.service.spec.ts)
+  - Prioritize maintainability and reliability over speed of implementation
+  - Test quality is non-negotiable and must meet the highest standards
+
+- **Forbidden Practices**
+  - Never import global functions like `test`, `describe`, `beforeEach`, `afterEach`
+  - Never use `it` instead of `test`
+  - Never create tests without proper cleanup (`vi.clearAllMocks()`)
+  - Never hardcode test data that should be variables
+  - Never skip error scenario testing
+  - Never create tests without proper async/await handling
+  - Never use Jest syntax or imports
+  - Never place test files in separate directories
+  - Never use `.toBe(true)` or `.toBe(false)` for boolean-like assertions (use `.toBeTruthy()` and `.toBeFalsy()` instead)
