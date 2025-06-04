@@ -1,0 +1,148 @@
+---
+description: 
+globs: *.ts
+alwaysApply: false
+---
+# Code Style Guidelines
+
+## **Function Declaration Style**
+- **Prefer Function Declarations:** Use `function` keyword instead of arrow functions for top-level functions
+- **Arrow Functions:** Reserve for callbacks, inline functions, and when lexical `this` binding is needed
+
+```typescript
+// ✅ DO: Use function declarations for main functions
+export function calculateTotal(items: Item[]): number {
+  return items.reduce((sum, item) => sum + item.price, 0)
+}
+
+// ✅ DO: Use arrow functions for callbacks
+const processedItems = items.map(item => ({
+  ...item,
+  total: item.price * item.quantity
+}))
+
+// ❌ DON'T: Arrow functions for main declarations
+const calculateTotal = (items: Item[]): number => {
+  return items.reduce((sum, item) => sum + item.price, 0)
+}
+```
+
+## **Type Definitions**
+- **Prefer Interfaces:** Use interfaces over type aliases for object shapes when possible
+- **Type Aliases:** Reserve for unions, primitives, and computed types
+- **Consistent Naming:** Use PascalCase for interfaces and types
+
+```typescript
+// ✅ DO: Use interfaces for object shapes
+interface ShoppingItem {
+  id: string
+  name: string
+  quantity: number
+  price: number
+}
+
+interface ApiResponse<T> {
+  data: T
+  status: 'success' | 'error'
+  message?: string
+}
+
+// ✅ DO: Use types for unions and computed types
+type Status = 'pending' | 'completed' | 'failed'
+type ItemKeys = keyof ShoppingItem
+
+// ❌ DON'T: Type aliases for simple object shapes
+type ShoppingItem = {
+  id: string
+  name: string
+  quantity: number
+}
+```
+
+## **Import Management**
+- **Clean Imports:** Always remove unused imports when making changes
+- **Import Order:** Follow consistent import ordering (external → internal → relative)
+- **Named Imports:** Prefer named imports over default imports for utilities
+
+```typescript
+// ✅ DO: Clean, organized imports
+import { useState, useEffect } from 'react'
+import { Button } from '@/shared/components/ui/Button'
+import { ShoppingItem } from '../types'
+import { calculateTotal } from './utils'
+
+// ❌ DON'T: Unused or disorganized imports
+import React, { useState, useEffect, useCallback } from 'react' // useCallback not used
+import { calculateTotal } from './utils'
+import { Button } from '@/shared/components/ui/Button'
+import { ShoppingItem } from '../types'
+```
+
+## **Comment Standards**
+- **Minimal Comments:** Avoid comments in generated code unless truly complex
+- **Focus on Why:** When comments are needed, explain reasoning not implementation
+- **Self-Documenting Code:** Prefer descriptive names over explanatory comments
+
+```typescript
+// ✅ DO: Self-documenting code
+function validateShoppingItem(item: ShoppingItem): boolean {
+  return item.name.trim().length > 0 && item.quantity > 0 && item.price >= 0
+}
+
+// ✅ DO: Comment complex business logic (when necessary)
+function calculateDiscountedPrice(price: number, discountPercent: number): number {
+  // Apply progressive discount: 10% base + additional 5% for bulk orders
+  const baseDiscount = discountPercent / 100
+  const bulkBonus = price > 100 ? 0.05 : 0
+  return price * (1 - baseDiscount - bulkBonus)
+}
+
+// ❌ DON'T: Obvious comments
+function addItem(item: ShoppingItem): void {
+  // Add the item to the list
+  items.push(item)
+}
+```
+
+## **Code Organization**
+- **Consistent Formatting:** Follow project's Prettier/ESLint configuration
+- **Logical Grouping:** Group related functionality together
+- **Early Returns:** Use early returns to reduce nesting
+
+```typescript
+// ✅ DO: Early returns and clear structure
+function processShoppingList(items: ShoppingItem[]): ProcessedList {
+  if (!items.length) {
+    return { items: [], total: 0, isEmpty: true }
+  }
+
+  const validItems = items.filter(item => item.quantity > 0)
+  if (!validItems.length) {
+    return { items: [], total: 0, isEmpty: true }
+  }
+
+  return {
+    items: validItems,
+    total: calculateTotal(validItems),
+    isEmpty: false
+  }
+}
+
+// ❌ DON'T: Nested conditions and unclear structure
+function processShoppingList(items: ShoppingItem[]): ProcessedList {
+  if (items.length > 0) {
+    const validItems = items.filter(item => item.quantity > 0)
+    if (validItems.length > 0) {
+      return {
+        items: validItems,
+        total: calculateTotal(validItems),
+        isEmpty: false
+      }
+    } else {
+      return { items: [], total: 0, isEmpty: true }
+    }
+  } else {
+    return { items: [], total: 0, isEmpty: true }
+  }
+}
+```

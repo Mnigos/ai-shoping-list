@@ -1,22 +1,59 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-# Global rules
+# Global Development Guidelines
 
-- When generating new code always refer to already created project structure and follow simmilar coding rules to existing pieces.
-- Favor elegant, maintainable solutions over verbose code. Assume understanding of language idioms and design patterns.
-- Highlight potential performance implications and optimization opportunities in suggested code.
-- Frame solutions within broader architectural contexts and suggest design alternatives when appropriate.
-- Focus comments on 'why' not 'what' - assume code readability through well-named functions and variables.
-- Proactively address edge cases, race conditions, and security considerations without being prompted.
-- When debugging, provide targeted diagnostic approaches rather than shotgun solutions.
-- Suggest comprehensive testing strategies rather than just example tests, including considerations for mocking, test organization, and coverage.
-- When making changes always remove unnecesary imports
-- Always check linter errors
-- Prefer using `function` instead of arrow function where possible
-- When adding new UI components always format them according to [creating-components.mdc](mdc:.cursor/rules/creating-components.mdc)
-- Prefer interfaces over types whenever possible
-- !!! Do not add comments to generated code unless it's really complex
-- Always assume that dev server is already running and don't run `npm run dev` by yourself
+## **Project Structure Adherence**
+- **Follow Established Architecture:** Always refer to [architecture.mdc](mdc:.cursor/rules/architecture.mdc) for proper file placement and module organization
+- **Maintain Consistency:** When generating new code, analyze existing project structure and follow similar patterns
+- **Respect Module Boundaries:** Keep feature-specific code in appropriate modules, shared code in `app/shared/`
+
+```typescript
+// ✅ DO: Follow established project structure
+app/modules/shopping-list/components/ShoppingListItem.tsx
+app/shared/components/ui/Button.tsx
+
+// ❌ DON'T: Mix concerns or ignore module boundaries
+app/shared/components/ShoppingListSpecificButton.tsx
+```
+
+## **Development Philosophy**
+- **Elegant Solutions:** Favor maintainable, idiomatic code over verbose implementations
+- **Performance Awareness:** Highlight optimization opportunities and performance implications
+- **Architectural Context:** Frame solutions within broader architectural contexts and suggest alternatives
+- **Proactive Quality:** Address edge cases, race conditions, and security considerations without prompting
+
+## **Problem Solving Approach**
+- **Targeted Debugging:** Provide diagnostic approaches rather than shotgun solutions
+- **Comprehensive Testing:** Suggest testing strategies following [testing.mdc](mdc:.cursor/rules/testing.mdc) guidelines
+- **Documentation Standards:** Focus comments on 'why' not 'what' - assume code readability through naming
+
+## **Component Development**
+- **UI Components:** Follow [creating-components.mdc](mdc:.cursor/rules/creating-components.mdc) for all new UI components
+- **Shared Resources:** Utilize existing components in `app/shared/components/` before creating new ones
+- **Clean Imports:** Always remove unnecessary imports when making changes
+
+## **Development Environment**
+- **Server Management:** Assume dev server is running - never run `npm run dev` automatically
+- **Command Usage:** Follow [using-commands.mdc](mdc:.cursor/rules/using-commands.mdc) for terminal operations
+- **Code Style:** Follow [code-stylistics.mdc](mdc:.cursor/rules/code-stylistics.mdc) for syntax and formatting preferences
+- **Linter Compliance:** Always check and resolve linter errors before completion
+
+```typescript
+// ✅ DO: Clean, maintainable code
+export function calculateTotalPrice(items: ShoppingItem[]): number {
+  return items.reduce((total, item) => total + item.price * item.quantity, 0)
+}
+
+// ❌ DON'T: Verbose, unclear implementation
+const calculateTotalPrice = (items: any) => {
+  let total = 0
+  for (let i = 0; i < items.length; i++) {
+    // This adds the price times quantity to the total
+    total = total + items[i].price * items[i].quantity
+  }
+  return total
+}
+```
