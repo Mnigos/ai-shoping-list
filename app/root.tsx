@@ -14,7 +14,7 @@ import { clientEnv } from './env.client'
 import { TRPCReactProvider } from './lib/trpc/react'
 
 import './app.css'
-import { NavigationBar } from './components/navigation-bar'
+import { NavigationBar } from '~/shared/components/navigation-bar'
 import { auth } from './lib/auth.server'
 
 export const links: Route.LinksFunction = () => [

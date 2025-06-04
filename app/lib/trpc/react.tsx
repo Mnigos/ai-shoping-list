@@ -11,7 +11,7 @@ import { type PropsWithChildren, cache, useState } from 'react'
 
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server'
 import { clientEnv } from '~/env.client'
-import type { AppRouter } from '~/server/main'
+import type { AppRouter } from '~/lib/trpc/app.router'
 
 function makeQueryClient() {
 	return new QueryClient({

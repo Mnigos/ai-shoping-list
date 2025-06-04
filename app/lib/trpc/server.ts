@@ -1,7 +1,7 @@
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query'
 import type { LoaderFunctionArgs } from 'react-router'
-import { appRouter } from '~/server/main'
-import { createCallerFactory, createTRPCContext } from '~/server/trpc'
+import { appRouter } from '~/lib/trpc/app.router'
+import { createCallerFactory, createTRPCContext } from '~/lib/trpc/t'
 import { getQueryClient } from './react'
 
 const createContext = (opts: { headers: Headers }) => {
