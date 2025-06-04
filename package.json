@@ -13,6 +13,7 @@
 		"check": "biome check",
 		"check:write": "biome check --write",
 		"test": "vitest",
+		"test:run": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"typecheck": "react-router typegen && tsc",
 		"prisma:migrate:dev": "bunx prisma migrate dev",
