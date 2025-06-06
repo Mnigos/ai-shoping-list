@@ -216,15 +216,14 @@ describe('ShoppingListRouter', () => {
 				}
 			})
 
-			test('should allow optional amount for all actions', () => {
-				// The ShoppingListActionSchema has amount as optional for all actions
-				const validInputs = [
+			test('should require amount for add and update actions', () => {
+				const invalidInputs = [
 					{
 						actions: [
 							{
 								action: 'add',
 								name: 'apples',
-								// amount is optional in schema
+								// missing required amount
 							},
 						],
 					},
@@ -233,10 +232,20 @@ describe('ShoppingListRouter', () => {
 							{
 								action: 'update',
 								name: 'bananas',
-								// amount is optional in schema
+								// missing required amount
 							},
 						],
 					},
+				]
+
+				for (const input of invalidInputs) {
+					const result = ExecuteActionsInputSchema.safeParse(input)
+					expect(result.success).toBe(false)
+				}
+			})
+
+			test('should allow optional amount for delete and complete actions', () => {
+				const validInputs = [
 					{
 						actions: [
 							{
@@ -250,6 +259,34 @@ describe('ShoppingListRouter', () => {
 							{
 								action: 'complete',
 								name: 'milk',
+							},
+						],
+					},
+				]
+
+				for (const input of validInputs) {
+					const result = ExecuteActionsInputSchema.safeParse(input)
+					expect(result.success).toBe(true)
+				}
+			})
+
+			test('should validate add and update actions with valid amounts', () => {
+				const validInputs = [
+					{
+						actions: [
+							{
+								action: 'add',
+								name: 'apples',
+								amount: 3,
+							},
+						],
+					},
+					{
+						actions: [
+							{
+								action: 'update',
+								name: 'bananas',
+								amount: 2,
 							},
 						],
 					},

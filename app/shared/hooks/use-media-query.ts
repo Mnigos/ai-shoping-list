@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const breakpoints = {
+export const breakpoints = {
 	sm: '(min-width: 640px)',
 	md: '(min-width: 768px)',
 	lg: '(min-width: 1024px)',

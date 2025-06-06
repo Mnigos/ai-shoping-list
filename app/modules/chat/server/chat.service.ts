@@ -2,6 +2,7 @@ import { google } from '@ai-sdk/google'
 import { streamObject } from 'ai'
 import z from 'zod'
 import type { ProtectedContext } from '~/lib/trpc/t'
+import { ShoppingListActionSchema } from '~/modules/shopping-list/server/shopping-list-action.service'
 import { assistantPromptFactory } from './chat.prompts'
 
 export const MessageSchema = z.object({
@@ -11,36 +12,9 @@ export const MessageSchema = z.object({
 })
 export type Message = z.infer<typeof MessageSchema>
 
-const ShoppingListActionItemSchema = z
-	.object({
-		action: z
-			.enum(['add', 'update', 'delete', 'complete'])
-			.describe('The action to perform on this item'),
-		name: z.string().describe('The name of the item'),
-		amount: z
-			.number()
-			.min(1, 'Amount must be at least 1')
-			.describe(
-				'The amount of the item (required for add/update actions, optional for delete/complete actions)',
-			)
-			.optional(),
-	})
-	.refine(
-		data => {
-			if ((data.action === 'add' || data.action === 'update') && !data.amount) {
-				return false
-			}
-			return true
-		},
-		{
-			message: 'Amount is required for add and update actions',
-			path: ['amount'],
-		},
-	)
-
-const ShoppingListActionSchema = z.object({
+const ChatResponseSchema = z.object({
 	actions: z
-		.array(ShoppingListActionItemSchema)
+		.array(ShoppingListActionSchema)
 		.describe('Array of actions to perform on the shopping list'),
 	message: z
 		.string()
@@ -66,7 +40,7 @@ export class ChatService {
 
 		const { partialObjectStream } = streamObject({
 			model: google('gemini-2.5-flash-preview-04-17'),
-			schema: ShoppingListActionSchema,
+			schema: ChatResponseSchema,
 			prompt: assistantPromptFactory({
 				currentItems,
 				recentMessages,

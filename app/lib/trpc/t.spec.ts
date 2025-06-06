@@ -1,63 +1,41 @@
-import { TRPCError } from '@trpc/server'
 import { vi } from 'vitest'
 
-// Mock dependencies for testing
-const mockAuth = {
-	api: {
-		getSession: vi.fn(),
+// Mock the actual dependencies - must be at top level before imports
+vi.mock('~/lib/auth.server', () => ({
+	auth: {
+		api: {
+			getSession: vi.fn(),
+		},
 	},
-}
+}))
 
-const mockPrisma = {
-	$connect: vi.fn(),
-	$disconnect: vi.fn(),
-}
-
-const mockEnv = {
-	NODE_ENV: 'test',
-	DATABASE_URL: 'test-url',
-}
-
-// Create standalone versions of the functions for testing
-async function createTRPCContext(opts: { headers: Headers }) {
-	const session = await mockAuth.api.getSession({
-		headers: opts.headers,
-	})
-
-	const source = opts.headers.get('x-trpc-source') ?? 'unknown'
-	console.log('>>> tRPC Request from', source, 'by', session?.user.name)
-	return {
-		prisma: mockPrisma,
-		user: session?.user,
-		env: mockEnv,
-	}
-}
-
-// Mock protected procedure middleware logic
-function createProtectedProcedureMiddleware() {
-	return ({ ctx, next }: any) => {
-		if (!ctx.user?.id) throw new TRPCError({ code: 'UNAUTHORIZED' })
-
-		return next({
-			ctx: {
-				...ctx,
-				user: ctx.user,
-			},
-		})
-	}
-}
-
-const protectedProcedure = {
-	_def: {
-		middlewares: [createProtectedProcedureMiddleware()],
+vi.mock('~/lib/prisma', () => ({
+	prisma: {
+		$connect: vi.fn(),
+		$disconnect: vi.fn(),
 	},
-}
+}))
 
-const publicProcedure = {
-	_def: {
-		middlewares: [],
+vi.mock('~/env.server', () => ({
+	env: {
+		NODE_ENV: 'test',
+		DATABASE_URL: 'test-url',
 	},
-}
+}))
+
+import { env } from '~/env.server'
+import { auth } from '~/lib/auth.server'
+import { prisma } from '~/lib/prisma'
+import {
+	createTRPCContext,
+	protectedProcedure,
+	publicProcedure,
+} from '~/lib/trpc/t'
+
+// Get the mocked instances
+const mockAuth = vi.mocked(auth)
+const mockPrisma = vi.mocked(prisma)
+const mockEnv = vi.mocked(env)
 
 const userId = 'test-user-id'
 const mockUser = {
@@ -83,9 +61,16 @@ describe('TRPC Setup (t.ts)', () => {
 
 	describe('createTRPCContext', () => {
 		test('should create context with user session', async () => {
-			mockAuth.api.getSession.mockResolvedValue({
+			vi.mocked(mockAuth.api.getSession).mockResolvedValue({
 				user: mockUser,
-				session: { id: 'session-id' },
+				session: {
+					id: 'session-id',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					userId: mockUser.id,
+					expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+					token: 'test-token',
+				},
 			})
 
 			const context = await createTRPCContext({ headers: mockHeaders })
@@ -101,7 +86,7 @@ describe('TRPC Setup (t.ts)', () => {
 		})
 
 		test('should create context without user session', async () => {
-			mockAuth.api.getSession.mockResolvedValue(null)
+			vi.mocked(mockAuth.api.getSession).mockResolvedValue(null)
 
 			const context = await createTRPCContext({ headers: mockHeaders })
 
@@ -117,8 +102,16 @@ describe('TRPC Setup (t.ts)', () => {
 				authorization: 'Bearer test-token',
 			})
 
-			mockAuth.api.getSession.mockResolvedValue({
+			vi.mocked(mockAuth.api.getSession).mockResolvedValue({
 				user: mockUser,
+				session: {
+					id: 'session-id-2',
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					userId: mockUser.id,
+					expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+					token: 'test-token-2',
+				},
 			})
 
 			const context = await createTRPCContext({
@@ -130,7 +123,7 @@ describe('TRPC Setup (t.ts)', () => {
 
 		test('should handle auth service errors', async () => {
 			const authError = new Error('Auth service unavailable')
-			mockAuth.api.getSession.mockRejectedValue(authError)
+			vi.mocked(mockAuth.api.getSession).mockRejectedValue(authError)
 
 			await expect(createTRPCContext({ headers: mockHeaders })).rejects.toThrow(
 				'Auth service unavailable',
