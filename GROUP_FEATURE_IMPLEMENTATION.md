@@ -235,40 +235,44 @@ Create components and hooks to handle anonymous user restrictions.
 
 ---
 
-### Task 6: Group Store and State Management
+### Task 6: Group Query Hooks and Optimistic Updates
 
 **Priority: High | Dependencies: Task 3 | Estimated Time: 3-4 hours**
 
-Create Zustand store for managing group state following the pattern from chat module.
+Create React Query hooks for managing group state with optimistic updates, following the established pattern from the shopping-list module.
 
 **Deliverables:**
 
-- Group store with state management
-- Hooks for group operations
-- Local storage persistence for active group
+- Group query hooks using React Query
+- Optimistic update helpers for group operations
+- Active group selection hook with localStorage persistence
+- Group helper functions
 
 **Files to create:**
 
-- `app/modules/group/stores/group.store.ts`
 - `app/modules/group/hooks/use-groups.ts`
 - `app/modules/group/hooks/use-active-group.ts`
+- `app/modules/group/hooks/use-create-group-mutation.ts`
+- `app/modules/group/hooks/use-join-group-mutation.ts`
+- `app/modules/group/hooks/helpers/group-optimistic-updates.ts`
 - `app/modules/group/hooks/helpers/group-helpers.ts`
 
 **Acceptance Criteria:**
 
-- Store tracks current active group with persistence
-- Store manages list of user's groups
-- Personal group detection logic
-- Persistence of active group selection using createJSONStorage
-- Optimistic updates for better UX
-- Proper TypeScript interfaces
+- React Query hooks for all group operations following shopping-list patterns
+- Optimistic updates using the existing `createOptimisticUpdate` helper
+- Active group persistence using localStorage (not Zustand)
+- Personal group detection logic in helper functions
+- Proper TypeScript interfaces matching existing patterns
+- Query invalidation and cache management
 
 **Definition of Done:**
 
-- Group state is managed centrally
-- Active group persists across sessions
-- Store follows chat module pattern with middleware
-- Proper error handling and loading states
+- Group state managed entirely through React Query
+- Optimistic updates follow established patterns from shopping-list
+- Active group selection persists across sessions using localStorage
+- No separate state management store created
+- Hooks follow the same patterns as shopping-list hooks
 
 ---
 
@@ -298,14 +302,14 @@ Create the group creation flow with modal that asks users if they want to transf
 - After successful group creation, show transfer modal if user has existing items
 - Transfer modal shows current shopping list items count
 - Option to transfer all items or keep them in personal group
-- Hooks follow established mutation patterns with optimistic updates
+- Hooks follow established mutation patterns with optimistic updates using React Query
 - Anonymous users see disabled state with tooltips
 
 **Definition of Done:**
 
 - Users can create groups smoothly
 - Transfer workflow is intuitive and clear
-- Hooks follow established patterns from shopping-list
+- Hooks follow established patterns from shopping-list with React Query
 - Error handling and loading states implemented
 
 ---
@@ -714,19 +718,20 @@ app/modules/group/
 │   └── group-member-list.tsx
 ├── hooks/               # Custom hooks
 │   ├── helpers/         # Hook helper functions
+│   │   ├── group-optimistic-updates.ts
+│   │   └── group-helpers.ts
 │   ├── use-create-group-mutation.ts
 │   ├── use-join-group-mutation.ts
+│   ├── use-active-group.ts
 │   └── use-groups.ts
-├── server/              # Server-side code
-│   ├── helpers/         # Server helper functions
-│   ├── group.service.ts
-│   ├── group.router.ts
-│   ├── group.procedure.ts
-│   ├── group-member.service.ts
-│   ├── group-member.router.ts
-│   └── group-member.procedure.ts
-└── stores/              # Zustand stores
-    └── group.store.ts
+└── server/              # Server-side code
+    ├── helpers/         # Server helper functions
+    ├── group.service.ts
+    ├── group.router.ts
+    ├── group.procedure.ts
+    ├── group-member.service.ts
+    ├── group-member.router.ts
+    └── group-member.procedure.ts
 ```
 
 ### Service Layer Pattern
@@ -791,31 +796,44 @@ export function useCreateGroupMutation() {
 }
 ```
 
-### Store Pattern
+### React Query Hook Pattern
 
-Following the chat store pattern with persistence:
+Following the shopping-list hook pattern with optimistic updates:
 
 ```typescript
-// app/modules/group/stores/group.store.ts
-interface GroupStore {
-  activeGroupId: string | null
-  groups: Group[]
-  setActiveGroup: (groupId: string) => void
-  // ... other methods
+// app/modules/group/hooks/helpers/group-optimistic-updates.ts
+import type { Group } from '@prisma/client'
+import { createOptimisticUpdate, createOptimisticErrorHandler } from '@/modules/shopping-list/hooks/helpers/optimistic-updates'
+
+export function createGroupOptimisticUpdate(queryClient: QueryClient, queryKey: QueryKey) {
+  return createOptimisticUpdate<CreateGroupInput>({
+    queryClient,
+    queryKey,
+    updateFn: (groups, variables) => [
+      ...groups,
+      {
+        id: `temp-${Date.now()}`,
+        name: variables.name,
+        description: variables.description,
+        // ... other optimistic fields
+      } as Group
+    ]
+  })
 }
 
-export const useGroupStore = create<GroupStore>()(
-  persist(
-    (set) => ({
-      // ... store implementation
-    }),
-    {
-      name: 'group',
-      storage: createJSONStorage(() => localStorage),
-      // ... persistence config
-    }
-  )
-)
+// app/modules/group/hooks/use-active-group.ts
+export function useActiveGroup() {
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(() => {
+    return localStorage.getItem('activeGroupId')
+  })
+  
+  const setActiveGroup = useCallback((groupId: string) => {
+    setActiveGroupId(groupId)
+    localStorage.setItem('activeGroupId', groupId)
+  }, [])
+  
+  // ... rest of implementation
+}
 ```
 
 ---
