@@ -1,20 +1,14 @@
 import { vi } from 'vitest'
 import { linkAnonymousAccount } from './auth.server'
-import { prisma } from './prisma'
 
-vi.mock('./prisma', () => ({
-	prisma: {
-		$transaction: vi.fn(),
-		shoppingListItem: {
-			findMany: vi.fn(),
-			update: vi.fn(),
-			delete: vi.fn(),
-			findFirst: vi.fn(),
-		},
-	},
+const mockPrisma = vi.hoisted(() => ({
+	$transaction: vi.fn(),
 }))
 
-const mockPrisma = prisma as any
+// Mock prisma import
+vi.mock('./prisma', () => ({
+	prisma: mockPrisma,
+}))
 
 describe('Anonymous User Account Linking', () => {
 	const anonymousUserId = 'anonymous-user-id'

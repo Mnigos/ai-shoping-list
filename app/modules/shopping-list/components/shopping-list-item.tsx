@@ -11,9 +11,9 @@ import {
 import { Checkbox } from '~/shared/components/ui/checkbox'
 import { Input } from '~/shared/components/ui/input'
 import { Label } from '~/shared/components/ui/label'
-import { useToggleCompleteMutation } from '~/shared/hooks/use-toggle-complete-mutation'
-import { useUpdateItemMutation } from '~/shared/hooks/use-update-item-mutation'
 import { cn } from '~/shared/utils/cn'
+import { useToggleCompleteMutation } from '../hooks/use-toggle-complete-mutation'
+import { useUpdateItemMutation } from '../hooks/use-update-item-mutation'
 
 interface ShoppingListItemProps extends ComponentProps<'li'> {
 	item: ShoppingListItemType

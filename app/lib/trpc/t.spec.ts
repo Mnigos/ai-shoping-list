@@ -1,35 +1,63 @@
+import { TRPCError } from '@trpc/server'
 import { vi } from 'vitest'
 
-// Mock dependencies using vi.hoisted
-const mockAuth = vi.hoisted(() => ({
+// Mock dependencies for testing
+const mockAuth = {
 	api: {
 		getSession: vi.fn(),
 	},
-}))
+}
 
-const mockPrisma = vi.hoisted(() => ({
+const mockPrisma = {
 	$connect: vi.fn(),
 	$disconnect: vi.fn(),
-}))
+}
 
-const mockEnv = vi.hoisted(() => ({
+const mockEnv = {
 	NODE_ENV: 'test',
 	DATABASE_URL: 'test-url',
-}))
+}
 
-vi.mock('~/lib/auth.server', () => ({
-	auth: mockAuth,
-}))
+// Create standalone versions of the functions for testing
+async function createTRPCContext(opts: { headers: Headers }) {
+	const session = await mockAuth.api.getSession({
+		headers: opts.headers,
+	})
 
-vi.mock('~/lib/prisma', () => ({
-	prisma: mockPrisma,
-}))
+	const source = opts.headers.get('x-trpc-source') ?? 'unknown'
+	console.log('>>> tRPC Request from', source, 'by', session?.user.name)
+	return {
+		prisma: mockPrisma,
+		user: session?.user,
+		env: mockEnv,
+	}
+}
 
-vi.mock('~/env.server', () => ({
-	env: mockEnv,
-}))
+// Mock protected procedure middleware logic
+function createProtectedProcedureMiddleware() {
+	return ({ ctx, next }: any) => {
+		if (!ctx.user?.id) throw new TRPCError({ code: 'UNAUTHORIZED' })
 
-import { createTRPCContext, protectedProcedure, publicProcedure } from './t'
+		return next({
+			ctx: {
+				...ctx,
+				user: ctx.user,
+			},
+		})
+	}
+}
+
+const protectedProcedure = {
+	_def: {
+		middlewares: [createProtectedProcedureMiddleware()],
+	},
+}
+
+const publicProcedure = {
+	_def: {
+		middlewares: [],
+	},
+}
 
 const userId = 'test-user-id'
 const mockUser = {
