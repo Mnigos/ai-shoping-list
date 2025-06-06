@@ -1,16 +1,8 @@
 import { act, renderHook } from '@testing-library/react'
 import { vi } from 'vitest'
-import { useMediaQuery } from './use-media-query'
+import { breakpoints, useMediaQuery } from './use-media-query'
 
 describe('useMediaQuery', () => {
-	const breakpoints = {
-		sm: '(min-width: 640px)',
-		md: '(min-width: 768px)',
-		lg: '(min-width: 1024px)',
-		xl: '(min-width: 1280px)',
-		'2xl': '(min-width: 1536px)',
-	}
-
 	// Mock media query list
 	const mockMediaQueryList = {
 		matches: false,
@@ -83,14 +75,13 @@ describe('useMediaQuery', () => {
 			expect(result.current).toBeFalsy()
 		})
 
-		test('should return query matches state after mount', () => {
+		test('should return query matches state after effect runs', () => {
 			mockMediaQueryList.matches = true
 
-			const { result, rerender } = renderHook(() => useMediaQuery('md'))
+			const { result } = renderHook(() => useMediaQuery('md'))
 
-			// Force a rerender to trigger the effect
-			rerender()
-
+			// After initial render and effect, should return the actual matches state
+			// In testing environment, useEffect runs synchronously during initial render
 			expect(result.current).toBeTruthy()
 		})
 
@@ -153,7 +144,7 @@ describe('useMediaQuery', () => {
 			const { result, rerender } = renderHook(
 				({ breakpoint }: { breakpoint: keyof typeof breakpoints }) =>
 					useMediaQuery(breakpoint),
-				{ initialProps: { breakpoint: 'sm' as keyof typeof breakpoints } },
+				{ initialProps: { breakpoint: 'sm' } },
 			)
 
 			// Verify initial breakpoint is set up
@@ -161,7 +152,7 @@ describe('useMediaQuery', () => {
 
 			// Change breakpoint
 			mockMatchMedia.mockClear()
-			rerender({ breakpoint: 'lg' as keyof typeof breakpoints })
+			rerender({ breakpoint: 'lg' })
 
 			// Verify new breakpoint is set up
 			expect(mockMatchMedia).toHaveBeenCalledWith(breakpoints.lg)
@@ -171,13 +162,13 @@ describe('useMediaQuery', () => {
 			const { rerender } = renderHook(
 				({ breakpoint }: { breakpoint: keyof typeof breakpoints }) =>
 					useMediaQuery(breakpoint),
-				{ initialProps: { breakpoint: 'sm' as keyof typeof breakpoints } },
+				{ initialProps: { breakpoint: 'sm' } },
 			)
 
 			const firstListener = mockMediaQueryList.addEventListener.mock.calls[0][1]
 
 			// Change breakpoint
-			rerender({ breakpoint: 'md' as keyof typeof breakpoints })
+			rerender({ breakpoint: 'md' })
 
 			// Should remove the old listener
 			expect(mockMediaQueryList.removeEventListener).toHaveBeenCalledWith(
@@ -199,7 +190,7 @@ describe('useMediaQuery', () => {
 			const { result, rerender } = renderHook(
 				({ breakpoint }: { breakpoint?: keyof typeof breakpoints }) =>
 					useMediaQuery(breakpoint),
-				{ initialProps: { breakpoint: 'md' as keyof typeof breakpoints } },
+				{ initialProps: { breakpoint: 'md' } },
 			)
 
 			// Initially has a breakpoint
@@ -236,7 +227,7 @@ describe('useMediaQuery', () => {
 				value: undefined,
 			})
 
-			// Should not throw error
+			// Should throw error when trying to access matchMedia
 			expect(() => {
 				renderHook(() => useMediaQuery('md'))
 			}).toThrow()

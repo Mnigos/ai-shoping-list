@@ -1,4 +1,4 @@
-import { type MockedFunction, vi } from 'vitest'
+import { vi } from 'vitest'
 import type { ProtectedContext } from '~/lib/trpc/t'
 import {
 	type PrismaTransaction,
@@ -7,11 +7,11 @@ import {
 } from './shopping-list-action.service'
 
 const mockShoppingListItem = {
-	findFirst: vi.fn() as MockedFunction<any>,
-	findMany: vi.fn() as MockedFunction<any>,
-	create: vi.fn() as MockedFunction<any>,
-	update: vi.fn() as MockedFunction<any>,
-	delete: vi.fn() as MockedFunction<any>,
+	findFirst: vi.fn(),
+	findMany: vi.fn(),
+	create: vi.fn(),
+	update: vi.fn(),
+	delete: vi.fn(),
 }
 
 const mockTx = {
@@ -19,7 +19,7 @@ const mockTx = {
 } as unknown as PrismaTransaction
 
 const mockPrisma = {
-	$transaction: vi.fn() as MockedFunction<any>,
+	$transaction: vi.fn(),
 }
 
 const mockUser = {
@@ -44,6 +44,12 @@ const itemId = 'item-123'
 const itemName = 'Test Item'
 const defaultAmount = 5
 
+const mockTransactionExecution = () => {
+	mockPrisma.$transaction.mockImplementation(async (callback: any) => {
+		return callback(mockTx)
+	})
+}
+
 describe('ShoppingListActionsService', () => {
 	let service: ShoppingListActionsService
 
@@ -65,9 +71,7 @@ describe('ShoppingListActionsService', () => {
 			]
 
 			mockShoppingListItem.findMany.mockResolvedValue(mockResult)
-			mockPrisma.$transaction.mockImplementation(async (callback: any) => {
-				return callback(mockTx)
-			})
+			mockTransactionExecution()
 
 			const result = await service.execute(actions)
 
@@ -84,9 +88,7 @@ describe('ShoppingListActionsService', () => {
 			const mockResult: any[] = []
 
 			mockShoppingListItem.findMany.mockResolvedValue(mockResult)
-			mockPrisma.$transaction.mockImplementation(async (callback: any) => {
-				return callback(mockTx)
-			})
+			mockTransactionExecution()
 
 			const result = await service.execute(actions)
 
@@ -95,20 +97,12 @@ describe('ShoppingListActionsService', () => {
 	})
 
 	describe('handleAddAction', () => {
-		test('should throw error when amount is missing', async () => {
-			const action = { action: 'add' as const, name: itemName }
+		test('should throw error for invalid action type', async () => {
+			const action = { action: 'delete', name: itemName } as any
 
 			await expect(
 				service.handleAddAction({ tx: mockTx, userId, action }),
-			).rejects.toThrow('Amount must be at least 1 for add action')
-		})
-
-		test('should throw error when amount is less than 1', async () => {
-			const action = { action: 'add' as const, name: itemName, amount: 0 }
-
-			await expect(
-				service.handleAddAction({ tx: mockTx, userId, action }),
-			).rejects.toThrow('Amount must be at least 1 for add action')
+			).rejects.toThrow('Invalid action type for handleAddAction')
 		})
 
 		test('should create new item when it does not exist', async () => {
@@ -186,20 +180,12 @@ describe('ShoppingListActionsService', () => {
 	})
 
 	describe('handleUpdateAction', () => {
-		test('should throw error when amount is missing', async () => {
-			const action = { action: 'update' as const, name: itemName }
+		test('should throw error for invalid action type', async () => {
+			const action = { action: 'delete', name: itemName } as any
 
 			await expect(
 				service.handleUpdateAction({ tx: mockTx, userId, action }),
-			).rejects.toThrow('Amount must be at least 1 for update action')
-		})
-
-		test('should throw error when amount is less than 1', async () => {
-			const action = { action: 'update' as const, name: itemName, amount: 0 }
-
-			await expect(
-				service.handleUpdateAction({ tx: mockTx, userId, action }),
-			).rejects.toThrow('Amount must be at least 1 for update action')
+			).rejects.toThrow('Invalid action type for handleUpdateAction')
 		})
 
 		test('should throw error when item does not exist', async () => {
@@ -380,21 +366,6 @@ describe('ShoppingListActionsService', () => {
 			})
 		})
 
-		test('should handle transaction rollback on error', async () => {
-			const actions = [
-				{ action: 'add' as const, name: 'Item 1', amount: 1 },
-				{ action: 'add' as const, name: 'Item 2', amount: 0 }, // Invalid amount
-			]
-
-			mockPrisma.$transaction.mockImplementation(async (callback: any) => {
-				return callback(mockTx)
-			})
-
-			await expect(service.execute(actions)).rejects.toThrow(
-				'Amount must be at least 1 for add action',
-			)
-		})
-
 		test('should execute actions in correct order', async () => {
 			const actions = [
 				{ action: 'add' as const, name: 'Item 1', amount: 2 },
@@ -413,9 +384,7 @@ describe('ShoppingListActionsService', () => {
 			mockShoppingListItem.update.mockResolvedValue({})
 			mockShoppingListItem.findMany.mockResolvedValue([])
 
-			mockPrisma.$transaction.mockImplementation(async (callback: any) => {
-				return callback(mockTx)
-			})
+			mockTransactionExecution()
 
 			await service.execute(actions)
 

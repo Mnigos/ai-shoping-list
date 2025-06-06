@@ -46,6 +46,21 @@ const mockContext = {
 
 const mockNext = vi.fn()
 
+// Helper to create a complete middleware context
+function createMiddlewareContext(overrides = {}) {
+	return {
+		ctx: mockContext,
+		type: 'query' as const,
+		path: 'test.path',
+		input: {},
+		getRawInput: vi.fn(),
+		meta: {},
+		signal: undefined,
+		next: mockNext,
+		...overrides,
+	}
+}
+
 describe('ShoppingListProcedure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
@@ -53,20 +68,11 @@ describe('ShoppingListProcedure', () => {
 	})
 
 	test('should add service to context', async () => {
-		const middleware = async ({ ctx, next }: any) => {
-			const service = new mockShoppingListService(ctx)
-			return next({
-				ctx: {
-					...ctx,
-					service,
-				},
-			})
-		}
+		// Get the shopping list middleware (last one in the chain)
+		const middlewares = shoppingListProcedure._def.middlewares
+		const shoppingListMiddleware = middlewares[middlewares.length - 1]
 
-		await middleware({
-			ctx: mockContext,
-			next: mockNext,
-		})
+		await shoppingListMiddleware(createMiddlewareContext())
 
 		expect(mockShoppingListService).toHaveBeenCalledWith(mockContext)
 		expect(mockNext).toHaveBeenCalledWith({
@@ -78,20 +84,11 @@ describe('ShoppingListProcedure', () => {
 	})
 
 	test('should pass through original context properties', async () => {
-		const middleware = async ({ ctx, next }: any) => {
-			const service = new mockShoppingListService(ctx)
-			return next({
-				ctx: {
-					...ctx,
-					service,
-				},
-			})
-		}
+		// Get the shopping list middleware (last one in the chain)
+		const middlewares = shoppingListProcedure._def.middlewares
+		const shoppingListMiddleware = middlewares[middlewares.length - 1]
 
-		await middleware({
-			ctx: mockContext,
-			next: mockNext,
-		})
+		await shoppingListMiddleware(createMiddlewareContext())
 
 		const callArgs = mockNext.mock.calls[0][0]
 		expect(callArgs.ctx.user).toEqual(mockUser)
@@ -104,44 +101,22 @@ describe('ShoppingListProcedure', () => {
 		const error = new Error('Next function failed')
 		mockNext.mockRejectedValue(error)
 
-		const middleware = async ({ ctx, next }: any) => {
-			const service = new mockShoppingListService(ctx)
-			return next({
-				ctx: {
-					...ctx,
-					service,
-				},
-			})
-		}
+		// Get the shopping list middleware (last one in the chain)
+		const middlewares = shoppingListProcedure._def.middlewares
+		const shoppingListMiddleware = middlewares[middlewares.length - 1]
 
 		await expect(
-			middleware({
-				ctx: mockContext,
-				next: mockNext,
-			}),
+			shoppingListMiddleware(createMiddlewareContext()),
 		).rejects.toThrow('Next function failed')
 	})
 
 	test('should create new service instance for each call', async () => {
-		const middleware = async ({ ctx, next }: any) => {
-			const service = new mockShoppingListService(ctx)
-			return next({
-				ctx: {
-					...ctx,
-					service,
-				},
-			})
-		}
+		// Get the shopping list middleware (last one in the chain)
+		const middlewares = shoppingListProcedure._def.middlewares
+		const shoppingListMiddleware = middlewares[middlewares.length - 1]
 
-		await middleware({
-			ctx: mockContext,
-			next: mockNext,
-		})
-
-		await middleware({
-			ctx: mockContext,
-			next: mockNext,
-		})
+		await shoppingListMiddleware(createMiddlewareContext())
+		await shoppingListMiddleware(createMiddlewareContext())
 
 		expect(mockNext).toHaveBeenCalledTimes(2)
 		expect(mockShoppingListService).toHaveBeenCalledTimes(2)
@@ -155,15 +130,9 @@ describe('ShoppingListProcedure', () => {
 	})
 
 	test('should work with different request types', async () => {
-		const middleware = async ({ ctx, next }: any) => {
-			const service = new mockShoppingListService(ctx)
-			return next({
-				ctx: {
-					...ctx,
-					service,
-				},
-			})
-		}
+		// Get the shopping list middleware (last one in the chain)
+		const middlewares = shoppingListProcedure._def.middlewares
+		const shoppingListMiddleware = middlewares[middlewares.length - 1]
 
 		const testCases = [
 			{ type: 'query' as const, path: 'getItems' },
@@ -173,10 +142,12 @@ describe('ShoppingListProcedure', () => {
 		]
 
 		for (const testCase of testCases) {
-			await middleware({
-				ctx: mockContext,
-				next: mockNext,
-			})
+			await shoppingListMiddleware(
+				createMiddlewareContext({
+					type: testCase.type,
+					path: testCase.path,
+				}),
+			)
 		}
 
 		expect(mockNext).toHaveBeenCalledTimes(testCases.length)

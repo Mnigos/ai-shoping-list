@@ -141,6 +141,25 @@ describe('ShoppingListService', () => {
 			expect(result).toEqual(mockCreatedItem)
 		})
 
+		test('should throw CONFLICT error when adding duplicate item', async () => {
+			const duplicateError = new Error('Unique constraint failed')
+			;(duplicateError as any).code = 'P2002'
+
+			mockPrisma.shoppingListItem.create.mockRejectedValue(duplicateError)
+
+			await expect(service.addItem(validInput)).rejects.toThrow(TRPCError)
+
+			try {
+				await service.addItem(validInput)
+			} catch (error) {
+				expect(error).toBeInstanceOf(TRPCError)
+				expect((error as TRPCError).code).toBe('CONFLICT')
+				expect((error as TRPCError).message).toBe(
+					`Item "${itemName}" already exists in your shopping list`,
+				)
+			}
+		})
+
 		test('should rethrow other database errors', async () => {
 			const genericError = new Error('Database connection failed')
 
@@ -184,8 +203,24 @@ describe('ShoppingListService', () => {
 
 			mockPrisma.shoppingListItem.update.mockRejectedValue(notFoundError)
 
+			await expect(service.updateItem(validInput)).rejects.toThrow(TRPCError)
+
+			try {
+				await service.updateItem(validInput)
+			} catch (error) {
+				expect(error).toBeInstanceOf(TRPCError)
+				expect((error as TRPCError).code).toBe('NOT_FOUND')
+				expect((error as TRPCError).message).toBe('Item not found')
+			}
+		})
+
+		test('should rethrow other database errors during update', async () => {
+			const genericError = new Error('Database connection failed')
+
+			mockPrisma.shoppingListItem.update.mockRejectedValue(genericError)
+
 			await expect(service.updateItem(validInput)).rejects.toThrow(
-				'Record not found',
+				'Database connection failed',
 			)
 		})
 	})
@@ -234,16 +269,11 @@ describe('ShoppingListService', () => {
 			mockPrisma.shoppingListItem.findUnique.mockResolvedValue(null)
 
 			await expect(service.toggleComplete(validInput)).rejects.toThrow(
-				TRPCError,
+				new TRPCError({
+					code: 'NOT_FOUND',
+					message: 'Item not found',
+				}),
 			)
-
-			try {
-				await service.toggleComplete(validInput)
-			} catch (error) {
-				expect(error).toBeInstanceOf(TRPCError)
-				expect((error as TRPCError).code).toBe('NOT_FOUND')
-				expect((error as TRPCError).message).toBe('Item not found')
-			}
 		})
 	})
 
@@ -275,8 +305,24 @@ describe('ShoppingListService', () => {
 
 			mockPrisma.shoppingListItem.delete.mockRejectedValue(notFoundError)
 
+			await expect(service.deleteItem(validInput)).rejects.toThrow(TRPCError)
+
+			try {
+				await service.deleteItem(validInput)
+			} catch (error) {
+				expect(error).toBeInstanceOf(TRPCError)
+				expect((error as TRPCError).code).toBe('NOT_FOUND')
+				expect((error as TRPCError).message).toBe('Item not found')
+			}
+		})
+
+		test('should rethrow other database errors during deletion', async () => {
+			const genericError = new Error('Database connection failed')
+
+			mockPrisma.shoppingListItem.delete.mockRejectedValue(genericError)
+
 			await expect(service.deleteItem(validInput)).rejects.toThrow(
-				'Record not found',
+				'Database connection failed',
 			)
 		})
 	})

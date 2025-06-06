@@ -45,18 +45,18 @@ describe('ChatProcedure', () => {
 	})
 
 	test('should add service to context', async () => {
-		const middleware = async ({ ctx, next }: any) => {
-			const service = new mockChatService(ctx)
-			return next({
-				ctx: {
-					...ctx,
-					service,
-				},
-			})
-		}
+		// Get the last middleware (ChatService middleware)
+		const middlewares = chatProcedure._def.middlewares
+		const chatServiceMiddleware = middlewares[middlewares.length - 1]
 
-		await middleware({
+		await chatServiceMiddleware?.({
 			ctx: mockContext,
+			type: 'query',
+			path: 'test',
+			input: {},
+			getRawInput: vi.fn(),
+			meta: {},
+			signal: undefined,
 			next: mockNext,
 		})
 
@@ -70,18 +70,18 @@ describe('ChatProcedure', () => {
 	})
 
 	test('should pass through original context properties', async () => {
-		const middleware = async ({ ctx, next }: any) => {
-			const service = new mockChatService(ctx)
-			return next({
-				ctx: {
-					...ctx,
-					service,
-				},
-			})
-		}
+		// Get the last middleware (ChatService middleware)
+		const middlewares = chatProcedure._def.middlewares
+		const chatServiceMiddleware = middlewares[middlewares.length - 1]
 
-		await middleware({
+		await chatServiceMiddleware?.({
 			ctx: mockContext,
+			type: 'query',
+			path: 'test',
+			input: {},
+			getRawInput: vi.fn(),
+			meta: {},
+			signal: undefined,
 			next: mockNext,
 		})
 
@@ -96,44 +96,42 @@ describe('ChatProcedure', () => {
 		const error = new Error('Next function failed')
 		mockNext.mockRejectedValue(error)
 
-		const middleware = async ({ ctx, next }: any) => {
-			const service = new mockChatService(ctx)
-			return next({
-				ctx: {
-					...ctx,
-					service,
-				},
-			})
-		}
+		// Get the last middleware (ChatService middleware)
+		const middlewares = chatProcedure._def.middlewares
+		const chatServiceMiddleware = middlewares[middlewares.length - 1]
 
 		await expect(
-			middleware({
+			chatServiceMiddleware?.({
 				ctx: mockContext,
+				type: 'query',
+				path: 'test',
+				input: {},
+				getRawInput: vi.fn(),
+				meta: {},
+				signal: undefined,
 				next: mockNext,
 			}),
 		).rejects.toThrow('Next function failed')
 	})
 
 	test('should create new service instance for each call', async () => {
-		const middleware = async ({ ctx, next }: any) => {
-			const service = new mockChatService(ctx)
-			return next({
-				ctx: {
-					...ctx,
-					service,
-				},
-			})
+		// Get the last middleware (ChatService middleware)
+		const middlewares = chatProcedure._def.middlewares
+		const chatServiceMiddleware = middlewares[middlewares.length - 1]
+
+		const middlewareArgs = {
+			ctx: mockContext,
+			type: 'query' as const,
+			path: 'test',
+			input: {},
+			getRawInput: vi.fn(),
+			meta: {},
+			signal: undefined,
+			next: mockNext,
 		}
 
-		await middleware({
-			ctx: mockContext,
-			next: mockNext,
-		})
-
-		await middleware({
-			ctx: mockContext,
-			next: mockNext,
-		})
+		await chatServiceMiddleware?.(middlewareArgs)
+		await chatServiceMiddleware?.(middlewareArgs)
 
 		expect(mockNext).toHaveBeenCalledTimes(2)
 		expect(mockChatService).toHaveBeenCalledTimes(2)
@@ -146,8 +144,28 @@ describe('ChatProcedure', () => {
 		expect(firstCall.ctx.service).not.toBe(secondCall.ctx.service)
 	})
 
-	test('should have chat procedure defined', () => {
-		expect(chatProcedure).toBeDefined()
-		expect(typeof chatProcedure).toBe('object')
+	test('should integrate ChatService into context via actual chatProcedure', async () => {
+		const mockInput = {}
+		const mockResolver = vi.fn().mockResolvedValue({ success: true })
+
+		const procedureWithResolver = chatProcedure.query(mockResolver)
+
+		await procedureWithResolver({
+			ctx: mockContext,
+			input: mockInput,
+			getRawInput: vi.fn(),
+			path: 'test',
+			type: 'query',
+			signal: undefined,
+		})
+
+		expect(mockChatService).toHaveBeenCalledWith(mockContext)
+		expect(mockResolver).toHaveBeenCalledWith(
+			expect.objectContaining({
+				ctx: expect.objectContaining({
+					service: expect.any(Object),
+				}),
+			}),
+		)
 	})
 })

@@ -7,11 +7,26 @@ export type PrismaTransaction = Omit<
 	'$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 
-export const ShoppingListActionSchema = z.object({
-	action: z.enum(['add', 'update', 'delete', 'complete']),
-	name: z.string(),
-	amount: z.number().min(1, 'Amount must be at least 1').optional(),
-})
+export const ShoppingListActionSchema = z.discriminatedUnion('action', [
+	z.object({
+		action: z.literal('add'),
+		name: z.string(),
+		amount: z.number().min(1, 'Amount must be at least 1'),
+	}),
+	z.object({
+		action: z.literal('update'),
+		name: z.string(),
+		amount: z.number().min(1, 'Amount must be at least 1'),
+	}),
+	z.object({
+		action: z.literal('delete'),
+		name: z.string(),
+	}),
+	z.object({
+		action: z.literal('complete'),
+		name: z.string(),
+	}),
+])
 export type ShoppingListActionSchema = z.infer<typeof ShoppingListActionSchema>
 
 interface ShoppingListActionParams {
@@ -53,8 +68,9 @@ export class ShoppingListActionsService {
 	async handleAddAction(params: ShoppingListActionParams) {
 		const { tx, userId, action } = params
 
-		if (!action.amount || action.amount < 1)
-			throw new Error('Amount must be at least 1 for add action')
+		if (action.action !== 'add') {
+			throw new Error('Invalid action type for handleAddAction')
+		}
 
 		const existingItem = await tx.shoppingListItem.findFirst({
 			where: {
@@ -84,8 +100,9 @@ export class ShoppingListActionsService {
 	async handleUpdateAction(params: ShoppingListActionParams) {
 		const { tx, userId, action } = params
 
-		if (!action.amount || action.amount < 1)
-			throw new Error('Amount must be at least 1 for update action')
+		if (action.action !== 'update') {
+			throw new Error('Invalid action type for handleUpdateAction')
+		}
 
 		const existingItem = await tx.shoppingListItem.findFirst({
 			where: {

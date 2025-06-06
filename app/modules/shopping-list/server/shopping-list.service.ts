@@ -53,7 +53,7 @@ export class ShoppingListService {
 
 	async addItem(input: AddItemInput) {
 		try {
-			return this.ctx.prisma.shoppingListItem.create({
+			return await this.ctx.prisma.shoppingListItem.create({
 				data: {
 					name: input.name,
 					amount: input.amount,
@@ -72,10 +72,20 @@ export class ShoppingListService {
 	}
 
 	async updateItem(input: UpdateItemInput) {
-		return this.ctx.prisma.shoppingListItem.update({
-			where: { id: input.id, userId: this.ctx.user.id },
-			data: { amount: input.amount },
-		})
+		try {
+			return await this.ctx.prisma.shoppingListItem.update({
+				where: { id: input.id, userId: this.ctx.user.id },
+				data: { amount: input.amount },
+			})
+		} catch (error) {
+			if (error instanceof Error && 'code' in error && error.code === 'P2025')
+				throw new TRPCError({
+					code: 'NOT_FOUND',
+					message: 'Item not found',
+				})
+
+			throw error
+		}
 	}
 
 	async toggleComplete(input: ToggleCompleteInput) {
@@ -93,8 +103,18 @@ export class ShoppingListService {
 	}
 
 	async deleteItem(input: DeleteItemInput) {
-		return this.ctx.prisma.shoppingListItem.delete({
-			where: { id: input.id, userId: this.ctx.user.id },
-		})
+		try {
+			return await this.ctx.prisma.shoppingListItem.delete({
+				where: { id: input.id, userId: this.ctx.user.id },
+			})
+		} catch (error) {
+			if (error instanceof Error && 'code' in error && error.code === 'P2025')
+				throw new TRPCError({
+					code: 'NOT_FOUND',
+					message: 'Item not found',
+				})
+
+			throw error
+		}
 	}
 }
