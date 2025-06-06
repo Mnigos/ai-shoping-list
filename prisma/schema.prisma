@@ -20,7 +20,14 @@ model User {
   isAnonymous      Boolean?  @default(false)
   sessions         Session[]
   accounts         Account[]
-  shoppingListItems ShoppingListItem[]
+  
+  // Group relationships
+  groupMemberships GroupMember[]
+  personalGroupId  String?   @unique
+  personalGroup    Group?    @relation("PersonalGroup", fields: [personalGroupId], references: [id])
+  
+  // Shopping list items created by this user
+  createdShoppingListItems ShoppingListItem[] @relation("ShoppingListItemCreator")
 
   @@unique([email])
   @@map("user")
@@ -74,6 +81,49 @@ model Verification {
   @@map("verification")
 }
 
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  inviteCode  String   @unique @default(cuid())
+  isPersonal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  members           GroupMember[]
+  shoppingListItems ShoppingListItem[]
+  personalUser      User?             @relation("PersonalGroup")
+  
+  @@map("group")
+  @@index([inviteCode])
+}
+
+model GroupMember {
+  id        String    @id @default(cuid())
+  role      GroupRole @default(MEMBER)
+  joinedAt  DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Foreign keys
+  userId    String
+  groupId   String
+  
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, groupId])
+  @@map("group_member")
+  @@index([groupId])
+  @@index([userId])
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
 model ShoppingListItem {
   id          String   @id @default(cuid())
   name        String
@@ -81,11 +131,18 @@ model ShoppingListItem {
   isCompleted Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Group relationship instead of user
+  groupId     String
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  // Track who created the item
+  createdById String
+  createdBy   User     @relation("ShoppingListItemCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@map("shopping_list_item")
-  @@index([userId])
-  @@unique([userId, name])
+  @@index([groupId])
+  @@index([createdById])
+  @@unique([groupId, name]) // Unique per group instead of per user
 }
 

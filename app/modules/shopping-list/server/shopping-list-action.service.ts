@@ -1,11 +1,6 @@
-import type { PrismaClient } from '@prisma/client'
 import z from 'zod'
 import type { ProtectedContext } from '~/lib/trpc/t'
-
-export type PrismaTransaction = Omit<
-	PrismaClient,
-	'$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
->
+import type { PrismaTransaction } from '~/shared/types/prisma'
 
 export const ShoppingListActionSchema = z.discriminatedUnion('action', [
 	z.object({
