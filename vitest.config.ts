@@ -12,6 +12,7 @@ export default mergeConfig(
 			globals: true,
 			environment: 'happy-dom',
 			setupFiles: './tests/vitest.setup.happy-dom.ts',
+			environmentMatchGlobs: [['**/.server/**/*.test.{ts,tsx}', 'node']],
 			coverage: {
 				provider: 'v8',
 				reporter: ['text', 'json', 'html', 'lcov'],

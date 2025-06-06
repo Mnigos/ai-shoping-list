@@ -3,7 +3,7 @@ import { type FormEvent, useRef } from 'react'
 import { useTRPC } from '~/lib/trpc/react'
 import { Button } from '~/shared/components/ui/button'
 import { Input } from '~/shared/components/ui/input'
-import { useAddItemMutation } from '~/shared/hooks/use-add-item-mutation'
+import { useAddItemMutation } from '../hooks/use-add-item-mutation'
 import { ShoppingListItem } from './shopping-list-item'
 
 export function ShoppingList() {
