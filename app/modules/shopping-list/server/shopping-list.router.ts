@@ -4,14 +4,15 @@ import {
 	AddItemInputSchema,
 	DeleteItemInputSchema,
 	ExecuteActionsInputSchema,
+	GetItemsInputSchema,
 	ToggleCompleteInputSchema,
 	UpdateItemInputSchema,
 } from './shopping-list.service'
 
 export const shoppingListRouter = {
-	getItems: shoppingListProcedure.query(async ({ ctx }) =>
-		ctx.service.getItems(),
-	),
+	getItems: shoppingListProcedure
+		.input(GetItemsInputSchema)
+		.query(async ({ ctx, input }) => ctx.service.getItems(input)),
 
 	executeActions: shoppingListProcedure
 		.input(ExecuteActionsInputSchema)

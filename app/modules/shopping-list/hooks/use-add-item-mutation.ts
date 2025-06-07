@@ -2,76 +2,33 @@ import type { ShoppingListItem } from '@prisma/client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authClient } from '~/lib/auth-client'
 import { useTRPC } from '~/lib/trpc/react'
-import {
-	createOptimisticErrorHandler,
-	createOptimisticSettledHandler,
-	createOptimisticUpdate,
-} from './helpers/optimistic-updates'
+import { useActiveGroupData } from '~/modules/group/hooks/use-active-group'
 
-interface AddItemContext {
-	previousItems: ShoppingListItem[]
-	optimisticItem: ShoppingListItem
+type ShoppingListItemWithCreator = ShoppingListItem & {
+	createdBy: {
+		id: string
+		name: string
+	}
 }
-
-const createOptimisticItem = (variables: {
-	name: string
-	amount?: number
-	userId: string
-}): ShoppingListItem => ({
-	id: `temp-${crypto.randomUUID()}`,
-	name: variables.name,
-	amount: variables.amount ?? 1,
-	isCompleted: false,
-	createdAt: new Date(),
-	updatedAt: new Date(),
-	userId: variables.userId,
-})
 
 export function useAddItemMutation() {
 	const trpc = useTRPC()
 	const queryClient = useQueryClient()
-	const queryKey = trpc.shoppingList.getItems.queryKey()
 	const { data } = authClient.useSession()
-
-	const optimisticUpdate = createOptimisticUpdate<
-		{ name: string; amount?: number },
-		AddItemContext
-	>({
-		queryClient,
-		queryKey,
-		updateFn: (items, variables) => {
-			const optimisticItem = createOptimisticItem({
-				...variables,
-				userId: data?.user.id ?? 'temp-user',
-			})
-			return [optimisticItem, ...items]
-		},
-		createContext: (previousItems, variables) => {
-			const optimisticItem = createOptimisticItem({
-				...variables,
-				userId: data?.user.id ?? 'temp-user',
-			})
-			return { previousItems, optimisticItem }
-		},
-	})
+	const { activeGroupId } = useActiveGroupData()
 
 	return useMutation(
 		trpc.shoppingList.addItem.mutationOptions({
-			onMutate: optimisticUpdate,
-			onError: createOptimisticErrorHandler<AddItemContext>(
-				queryClient,
-				queryKey,
-			),
-			onSuccess: (data, variables, context) => {
-				queryClient.setQueryData<ShoppingListItem[]>(
-					queryKey,
-					old =>
-						old?.map(item =>
-							item.id === context?.optimisticItem?.id ? data : item,
-						) ?? [],
-				)
+			onSuccess: () => {
+				// Invalidate the shopping list query for the active group
+				if (activeGroupId) {
+					queryClient.invalidateQueries({
+						queryKey: trpc.shoppingList.getItems.queryKey({
+							groupId: activeGroupId,
+						}),
+					})
+				}
 			},
-			onSettled: createOptimisticSettledHandler(queryClient, queryKey),
 		}),
 	)
 }
