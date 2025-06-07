@@ -27,41 +27,53 @@ export type ShoppingListActionSchema = z.infer<typeof ShoppingListActionSchema>
 interface ShoppingListActionParams {
 	tx: PrismaTransaction
 	userId: string
+	groupId: string
 	action: ShoppingListActionSchema
 }
 
 export class ShoppingListActionsService {
 	constructor(private readonly ctx: ProtectedContext) {}
 
-	execute(actions: z.infer<typeof ShoppingListActionSchema>[]) {
+	execute(
+		actions: z.infer<typeof ShoppingListActionSchema>[],
+		groupId: string,
+	) {
 		const userId = this.ctx.user.id
 
 		return this.ctx.prisma.$transaction(async tx => {
 			for (const action of actions)
 				switch (action.action) {
 					case 'add':
-						await this.handleAddAction({ tx, userId, action })
+						await this.handleAddAction({ tx, userId, groupId, action })
 						break
 					case 'update':
-						await this.handleUpdateAction({ tx, userId, action })
+						await this.handleUpdateAction({ tx, userId, groupId, action })
 						break
 					case 'delete':
-						await this.handleDeleteAction({ tx, userId, action })
+						await this.handleDeleteAction({ tx, userId, groupId, action })
 						break
 					case 'complete':
-						await this.handleCompleteAction({ tx, userId, action })
+						await this.handleCompleteAction({ tx, userId, groupId, action })
 						break
 				}
 
 			return tx.shoppingListItem.findMany({
-				where: { userId },
+				where: { groupId },
+				include: {
+					createdBy: {
+						select: {
+							id: true,
+							name: true,
+						},
+					},
+				},
 				orderBy: { createdAt: 'desc' },
 			})
 		})
 	}
 
 	async handleAddAction(params: ShoppingListActionParams) {
-		const { tx, userId, action } = params
+		const { tx, userId, groupId, action } = params
 
 		if (action.action !== 'add') {
 			throw new Error('Invalid action type for handleAddAction')
@@ -69,7 +81,7 @@ export class ShoppingListActionsService {
 
 		const existingItem = await tx.shoppingListItem.findFirst({
 			where: {
-				userId,
+				groupId,
 				name: {
 					equals: action.name,
 					mode: 'insensitive',
@@ -87,13 +99,14 @@ export class ShoppingListActionsService {
 				data: {
 					name: action.name,
 					amount: action.amount,
-					userId,
+					groupId,
+					createdById: userId,
 				},
 			})
 	}
 
 	async handleUpdateAction(params: ShoppingListActionParams) {
-		const { tx, userId, action } = params
+		const { tx, groupId, action } = params
 
 		if (action.action !== 'update') {
 			throw new Error('Invalid action type for handleUpdateAction')
@@ -101,7 +114,7 @@ export class ShoppingListActionsService {
 
 		const existingItem = await tx.shoppingListItem.findFirst({
 			where: {
-				userId,
+				groupId,
 				name: {
 					equals: action.name,
 					mode: 'insensitive',
@@ -118,11 +131,11 @@ export class ShoppingListActionsService {
 	}
 
 	async handleDeleteAction(params: ShoppingListActionParams) {
-		const { tx, userId, action } = params
+		const { tx, groupId, action } = params
 
 		const existingItem = await tx.shoppingListItem.findFirst({
 			where: {
-				userId,
+				groupId,
 				name: {
 					equals: action.name,
 					mode: 'insensitive',
@@ -138,11 +151,11 @@ export class ShoppingListActionsService {
 	}
 
 	async handleCompleteAction(params: ShoppingListActionParams) {
-		const { tx, userId, action } = params
+		const { tx, groupId, action } = params
 
 		const existingItem = await tx.shoppingListItem.findFirst({
 			where: {
-				userId,
+				groupId,
 				name: {
 					equals: action.name,
 					mode: 'insensitive',

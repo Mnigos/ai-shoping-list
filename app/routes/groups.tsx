@@ -1,14 +1,16 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 import { getQueryClient } from '~/lib/trpc/react'
 import { createTRPC } from '~/lib/trpc/server'
-import { Chat } from '~/modules/chat/components/chat'
-import { ShoppingList } from '~/modules/shopping-list/components/shopping-list'
-import type { Route } from './+types/home.route'
+import { GroupsPage } from '~/modules/group/components/groups-page'
+import type { Route } from './+types/groups'
 
 export function meta() {
 	return [
-		{ title: 'New React Router App' },
-		{ name: 'description', content: 'Welcome to React Router!' },
+		{ title: 'My Groups - AI Shopping List' },
+		{
+			name: 'description',
+			content: 'Manage your shopping list groups and settings',
+		},
 	]
 }
 
@@ -16,22 +18,20 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 	const queryClient = getQueryClient()
 	const trpc = await createTRPC(loaderArgs)
 
-	// await queryClient.prefetchQuery(trpc.shoppingList.getItems.queryOptions())
+	// Prefetch user's groups
+	await queryClient.prefetchQuery(trpc.group.getMyGroups.queryOptions())
 
 	return {
 		queryClient: dehydrate(queryClient),
 	}
 }
 
-export default function Home({
+export default function GroupsRoute({
 	loaderData: { queryClient },
 }: Route.ComponentProps) {
 	return (
 		<HydrationBoundary state={queryClient}>
-			<main className="container mx-auto grid grid-cols-2 gap-8 p-4">
-				<ShoppingList />
-				<Chat />
-			</main>
+			<GroupsPage />
 		</HydrationBoundary>
 	)
 }
