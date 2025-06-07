@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react'
 import { useState } from 'react'
+import { GroupInterface } from '~/modules/group/components/group-interface'
 import { cn } from '~/shared/utils/cn'
 import { SignInModal } from './auth/sign-in-modal'
 import { SignUpModal } from './auth/sign-up-modal'
@@ -35,7 +36,10 @@ export function NavigationBar({
 						<h1 className="font-bold text-xl">AI Shopping List</h1>
 					</header>
 
-					<div className="flex items-center space-x-2">
+					<div className="flex items-center space-x-4">
+						{/* Group interface - shows for authenticated users */}
+						{user && !user.isAnonymous && <GroupInterface />}
+
 						{user && !user.isAnonymous ? (
 							<NavigationBarUserPopover user={user} />
 						) : (

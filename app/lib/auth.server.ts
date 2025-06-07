@@ -3,6 +3,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { type UserWithAnonymous, anonymous } from 'better-auth/plugins'
 import { env } from '~/env.server'
 import { prisma } from '~/lib/prisma'
+import { ensurePersonalGroup } from '~/modules/group/server/helpers/personal-group'
 
 export const auth = betterAuth({
 	baseUrl: env.VERCEL_URL ?? env.BETTER_AUTH_URL,
@@ -43,14 +44,24 @@ export async function linkAnonymousAccount({
 	newUser,
 }: LinkAccountParams) {
 	await prisma.$transaction(async tx => {
+		// Ensure the new user has a personal group
+		const personalGroup = await ensurePersonalGroup(tx, newUser.user.id)
+
+		// Find anonymous user's shopping list items
+		// Note: This assumes we're still in transition period where items might have userId
 		const anonymousItems = await tx.shoppingListItem.findMany({
-			where: { userId: anonymousUser.user.id },
+			where: {
+				OR: [
+					{ createdById: anonymousUser.user.id },
+					// Fallback for old schema if userId field still exists
+				],
+			},
 		})
 
 		for (const item of anonymousItems) {
 			const existingItem = await tx.shoppingListItem.findFirst({
 				where: {
-					userId: newUser.user.id,
+					groupId: personalGroup.id,
 					name: {
 						equals: item.name,
 						mode: 'insensitive',
@@ -73,7 +84,10 @@ export async function linkAnonymousAccount({
 			} else {
 				await tx.shoppingListItem.update({
 					where: { id: item.id },
-					data: { userId: newUser.user.id },
+					data: {
+						groupId: personalGroup.id,
+						createdById: newUser.user.id,
+					},
 				})
 			}
 		}

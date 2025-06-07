@@ -16,7 +16,7 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 	const queryClient = getQueryClient()
 	const trpc = await createTRPC(loaderArgs)
 
-	await queryClient.prefetchQuery(trpc.shoppingList.getItems.queryOptions())
+	// await queryClient.prefetchQuery(trpc.shoppingList.getItems.queryOptions())
 
 	return {
 		queryClient: dehydrate(queryClient),

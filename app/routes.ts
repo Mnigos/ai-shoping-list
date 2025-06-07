@@ -5,4 +5,8 @@ export default [
 	route('/api/auth/*', 'routes/api.auth.$.ts'),
 
 	index('routes/home.route.tsx'),
+
+	route('/join-group/:token', 'routes/join-group.$token.tsx'),
+	route('/groups', 'routes/groups.tsx'),
+	route('/groups/:groupId', 'routes/groups.$groupId.tsx'),
 ] satisfies RouteConfig
