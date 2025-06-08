@@ -32,9 +32,9 @@ import {
 import { Input } from '~/shared/components/ui/input'
 import { Label } from '~/shared/components/ui/label'
 import { Textarea } from '~/shared/components/ui/textarea'
-import { useDeleteGroupMutation } from '../hooks/use-delete-group-mutation'
-import { useGenerateInviteCodeMutation } from '../hooks/use-generate-invite-code-mutation'
-import { useUpdateGroupMutation } from '../hooks/use-update-group-mutation'
+import { useDeleteGroupMutation } from '../hooks/use-delete-group.mutation'
+import { useRegenerateInviteCodeMutation } from '../hooks/use-regenerate-invite-code.mutation'
+import { useUpdateGroupMutation } from '../hooks/use-update-group.mutation'
 import { GroupMemberList } from './group-member-list'
 import { InviteLinkDialog } from './invite-link-dialog'
 
@@ -49,9 +49,6 @@ export function GroupSettingsPage({ groupId }: GroupSettingsPageProps) {
 	const { data: group, isLoading } = useQuery(
 		trpc.group.getGroupDetails.queryOptions({ id: groupId }),
 	)
-	const { data: members } = useQuery(
-		trpc.group.getMembers.queryOptions({ groupId }),
-	)
 
 	const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 	const [showEditDialog, setShowEditDialog] = useState(false)
@@ -60,7 +57,7 @@ export function GroupSettingsPage({ groupId }: GroupSettingsPageProps) {
 
 	const updateGroupMutation = useUpdateGroupMutation()
 	const deleteGroupMutation = useDeleteGroupMutation()
-	const generateCodeMutation = useGenerateInviteCodeMutation()
+	const regenerateCodeMutation = useRegenerateInviteCodeMutation()
 
 	if (isLoading) {
 		return (
@@ -99,7 +96,10 @@ export function GroupSettingsPage({ groupId }: GroupSettingsPageProps) {
 	const canManageGroup = isAdmin && !group.isPersonal
 
 	function handleEditGroup() {
-		setEditForm({ name: group.name, description: group.description || '' })
+		setEditForm({
+			name: group?.name || '',
+			description: group?.description || '',
+		})
 		setShowEditDialog(true)
 	}
 
@@ -119,22 +119,15 @@ export function GroupSettingsPage({ groupId }: GroupSettingsPageProps) {
 	}
 
 	function handleDeleteGroup() {
-		deleteGroupMutation.mutate(
-			{ id: groupId },
-			{
-				onSuccess: () => {
-					navigate('/groups')
-				},
-			},
-		)
+		deleteGroupMutation.mutate({ id: groupId })
 	}
 
 	function handleGenerateInviteCode() {
-		generateCodeMutation.mutate({ groupId })
+		regenerateCodeMutation.mutate({ id: groupId })
 	}
 
 	function handleCopyInviteCode() {
-		if (group.inviteCode) {
+		if (group?.inviteCode) {
 			navigator.clipboard.writeText(group.inviteCode)
 		}
 	}
@@ -143,10 +136,10 @@ export function GroupSettingsPage({ groupId }: GroupSettingsPageProps) {
 		<div className="container mx-auto p-6">
 			{/* Header */}
 			<div className="mb-6 flex items-center gap-4">
-				<Link to="/groups">
+				<Link to={`/groups/${groupId}`}>
 					<Button variant="ghost" size="sm">
 						<ArrowLeft className="mr-2 h-4 w-4" />
-						Back to Groups
+						Back to Group
 					</Button>
 				</Link>
 				<div className="flex-1">
@@ -251,10 +244,10 @@ export function GroupSettingsPage({ groupId }: GroupSettingsPageProps) {
 									onClick={handleGenerateInviteCode}
 									variant="outline"
 									size="sm"
-									disabled={generateCodeMutation.isPending}
+									disabled={regenerateCodeMutation.isPending}
 								>
 									<UserPlus className="mr-2 h-4 w-4" />
-									{generateCodeMutation.isPending
+									{regenerateCodeMutation.isPending
 										? 'Generating...'
 										: 'Generate New Code'}
 								</Button>
@@ -277,19 +270,20 @@ export function GroupSettingsPage({ groupId }: GroupSettingsPageProps) {
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
 						<Users className="h-5 w-5" />
-						Members ({members?.length || 0})
+						Members ({group.membersCount})
 					</CardTitle>
 					<CardDescription>
 						Manage group members and their roles
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					{members && (
+					{group.members && (
 						<GroupMemberList
 							groupId={groupId}
 							currentUserRole={group.myRole}
 							currentUserId={'current-user-id'}
 							isPersonalGroup={group.isPersonal}
+							members={group.members}
 						/>
 					)}
 				</CardContent>

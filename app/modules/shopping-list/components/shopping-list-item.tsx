@@ -8,7 +8,7 @@ import {
 	useRef,
 	useState,
 } from 'react'
-import { useActiveGroupData } from '~/modules/group/hooks/use-active-group'
+import { useParams } from 'react-router'
 import { Checkbox } from '~/shared/components/ui/checkbox'
 import { Input } from '~/shared/components/ui/input'
 import { Label } from '~/shared/components/ui/label'
@@ -34,8 +34,10 @@ export function ShoppingListItem({
 }: Readonly<ShoppingListItemProps>) {
 	const updateItemMutation = useUpdateItemMutation()
 	const toggleCompleteMutation = useToggleCompleteMutation()
-	const { activeGroupId } = useActiveGroupData()
+	const { id: activeGroupId } = useParams()
 	const [localAmount, setLocalAmount] = useState(item.amount)
+
+	if (!activeGroupId) throw new Error('Active group ID not found')
 
 	const debouncedUpdateRef = useRef(
 		debounce((id: string, amount: number, groupId: string) => {

@@ -1,3 +1,4 @@
+import type { GroupRole } from '@prisma/client'
 import { ShieldIcon, UserIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '~/shared/components/ui/button'
@@ -10,16 +11,17 @@ import {
 	DialogTitle,
 } from '~/shared/components/ui/dialog'
 import {
-	useGroupMembers,
 	useRemoveMemberMutation,
 	useUpdateRoleMutation,
 } from '../hooks/use-member-management'
+import type { GroupMember } from '../server/schemas'
 
 interface GroupMemberListProps {
 	groupId: string
-	currentUserRole: 'ADMIN' | 'MEMBER'
+	currentUserRole: GroupRole
 	currentUserId: string
 	isPersonalGroup?: boolean
+	members: GroupMember[]
 }
 
 interface ConfirmDialogState {
@@ -28,7 +30,7 @@ interface ConfirmDialogState {
 	member: {
 		id: string
 		name: string
-		role: 'ADMIN' | 'MEMBER'
+		role: GroupRole
 	} | null
 }
 
@@ -37,8 +39,8 @@ export function GroupMemberList({
 	currentUserRole,
 	currentUserId,
 	isPersonalGroup = false,
+	members,
 }: GroupMemberListProps) {
-	const { data: members, isLoading } = useGroupMembers({ groupId })
 	const removeMemberMutation = useRemoveMemberMutation()
 	const updateRoleMutation = useUpdateRoleMutation()
 
@@ -94,25 +96,6 @@ export function GroupMemberList({
 		setConfirmDialog({ isOpen: false, type: null, member: null })
 	}
 
-	if (isLoading) {
-		return (
-			<div className="space-y-3">
-				{Array.from({ length: 3 }).map((_, i) => (
-					<div
-						key={i}
-						className="flex animate-pulse items-center gap-3 rounded-lg border p-3"
-					>
-						<div className="h-10 w-10 rounded-full bg-muted" />
-						<div className="flex-1 space-y-2">
-							<div className="h-4 w-24 rounded bg-muted" />
-							<div className="h-3 w-16 rounded bg-muted" />
-						</div>
-					</div>
-				))}
-			</div>
-		)
-	}
-
 	if (!members?.length) {
 		return (
 			<div className="py-8 text-center text-muted-foreground">
@@ -126,20 +109,20 @@ export function GroupMemberList({
 		<>
 			<div className="space-y-2">
 				{members.map(member => {
-					const isCurrentUser = member.user.id === currentUserId
+					const isCurrentUser = member.userId === currentUserId
 					const canManageThisMember = canManageMembers && !isCurrentUser
 
 					return (
 						<div
-							key={member.id}
+							key={member.userId}
 							className="flex items-center gap-3 rounded-lg border bg-card p-3"
 						>
 							{/* Avatar */}
 							<div className="relative">
-								{member.user.image ? (
+								{member.image ? (
 									<img
-										src={member.user.image}
-										alt={member.user.name}
+										src={member.image}
+										alt={member.name}
 										className="h-10 w-10 rounded-full"
 									/>
 								) : (
@@ -158,7 +141,7 @@ export function GroupMemberList({
 							<div className="min-w-0 flex-1">
 								<div className="flex items-center gap-2">
 									<p className="truncate font-medium text-sm">
-										{member.user.name}
+										{member.name}
 										{isCurrentUser && (
 											<span className="ml-1 text-muted-foreground">(You)</span>
 										)}
@@ -178,7 +161,7 @@ export function GroupMemberList({
 											variant="outline"
 											size="sm"
 											onClick={() =>
-												handleUpdateRole(member.id, member.user.name, 'ADMIN')
+												handleUpdateRole(member.userId, member.name, 'ADMIN')
 											}
 										>
 											<ShieldIcon className="mr-1 h-4 w-4" />
@@ -189,7 +172,7 @@ export function GroupMemberList({
 											variant="outline"
 											size="sm"
 											onClick={() =>
-												handleUpdateRole(member.id, member.user.name, 'MEMBER')
+												handleUpdateRole(member.userId, member.name, 'MEMBER')
 											}
 										>
 											<UserIcon className="mr-1 h-4 w-4" />
@@ -200,7 +183,7 @@ export function GroupMemberList({
 										variant="outline"
 										size="sm"
 										onClick={() =>
-											handleRemoveMember(member.id, member.user.name)
+											handleRemoveMember(member.userId, member.name)
 										}
 										className="text-destructive hover:text-destructive"
 									>

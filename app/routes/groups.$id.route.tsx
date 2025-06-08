@@ -1,15 +1,15 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 import { getQueryClient } from '~/lib/trpc/react'
 import { createTRPC } from '~/lib/trpc/server'
-import { GroupSettingsPage } from '~/modules/group/components/group-settings-page'
-import type { Route } from './+types/groups.$groupId'
+import { GroupPage } from '~/modules/group/components/group-page'
+import type { Route } from './+types/groups.$id.route'
 
 export function meta({ params }: Route.MetaArgs) {
 	return [
-		{ title: 'Group Settings - AI Shopping List' },
+		{ title: 'Group - AI Shopping List' },
 		{
 			name: 'description',
-			content: 'Manage group settings, members, and invitations',
+			content: 'Manage your group shopping list and chat with members',
 		},
 	]
 }
@@ -17,16 +17,14 @@ export function meta({ params }: Route.MetaArgs) {
 export async function loader(loaderArgs: Route.LoaderArgs) {
 	const queryClient = getQueryClient()
 	const trpc = await createTRPC(loaderArgs)
-	const { groupId } = loaderArgs.params
+	const { id } = loaderArgs.params
 
-	// Prefetch group details and members
+	// Prefetch group details and shopping list items
 	try {
 		await Promise.all([
+			queryClient.prefetchQuery(trpc.group.getGroup.queryOptions({ id })),
 			queryClient.prefetchQuery(
-				trpc.group.getGroupDetails.queryOptions({ id: groupId }),
-			),
-			queryClient.prefetchQuery(
-				trpc.group.getMembers.queryOptions({ groupId }),
+				trpc.shoppingList.getItems.queryOptions({ groupId: id }),
 			),
 		])
 	} catch (error) {
@@ -36,16 +34,16 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 
 	return {
 		queryClient: dehydrate(queryClient),
-		groupId,
+		id,
 	}
 }
 
-export default function GroupSettingsRoute({
-	loaderData: { queryClient, groupId },
+export default function GroupRoute({
+	loaderData: { queryClient, id },
 }: Route.ComponentProps) {
 	return (
 		<HydrationBoundary state={queryClient}>
-			<GroupSettingsPage groupId={groupId} />
+			<GroupPage groupId={id} />
 		</HydrationBoundary>
 	)
 }

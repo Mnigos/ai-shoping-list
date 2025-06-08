@@ -1,9 +1,8 @@
 import { AlertCircle, CheckCircle, Loader2, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { AuthModal } from '~/shared/components/auth/auth-modal'
-import { SignInForm } from '~/shared/components/auth/sign-in-form'
-import { SignUpForm } from '~/shared/components/auth/sign-up-form'
+import { SignInModal } from '~/shared/components/auth/sign-in-modal'
+import { SignUpModal } from '~/shared/components/auth/sign-up-modal'
 import { Button } from '~/shared/components/ui/button'
 import {
 	Card,
@@ -12,39 +11,25 @@ import {
 	CardTitle,
 } from '~/shared/components/ui/card'
 import { useAuthStatus } from '~/shared/hooks/use-auth-status'
-import { useActiveGroup } from '../hooks/use-active-group'
-import {
-	useJoinViaTokenMutation,
-	useValidateInviteTokenQuery,
-} from '../hooks/use-join-group-token'
+import { useJoinGroupMutation } from '../hooks/use-join-group.mutation'
 import { GroupPreview } from './group-preview'
 
 interface JoinGroupPageProps {
-	token: string
+	code: string
 }
 
-export function JoinGroupPage({ token }: JoinGroupPageProps) {
+export function JoinGroupPage({ code }: JoinGroupPageProps) {
 	const navigate = useNavigate()
 	const {
 		isAuthenticated,
 		isAnonymous,
 		isLoading: authLoading,
 	} = useAuthStatus()
-	const { setActiveGroup } = useActiveGroup()
 	const [showAuthModal, setShowAuthModal] = useState(false)
 	const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
 
-	// Validate the invite token only when authenticated
-	const {
-		data: groupInfo,
-		isLoading: validating,
-		error: validationError,
-	} = useValidateInviteTokenQuery(
-		isAuthenticated && !isAnonymous ? token : null,
-	)
-
 	// Join group mutation
-	const joinMutation = useJoinViaTokenMutation()
+	const joinMutation = useJoinGroupMutation()
 
 	// Handle authentication requirement
 	useEffect(() => {
@@ -54,19 +39,9 @@ export function JoinGroupPage({ token }: JoinGroupPageProps) {
 	}, [authLoading, isAuthenticated])
 
 	const handleJoinGroup = async () => {
-		if (!groupInfo) return
-
-		if (groupInfo.isAlreadyMember) {
-			// User is already a member, just redirect
-			setActiveGroup(groupInfo.id)
-			navigate('/')
-			return
-		}
-
 		try {
-			const result = await joinMutation.mutateAsync({ token })
-			setActiveGroup(result.id)
-			navigate('/')
+			// The mutation will handle navigation automatically
+			await joinMutation.mutateAsync({ inviteCode: code })
 		} catch (error) {
 			console.error('Failed to join group:', error)
 			// Error will be handled by the mutation error state
@@ -79,7 +54,7 @@ export function JoinGroupPage({ token }: JoinGroupPageProps) {
 	}
 
 	// Loading state while checking auth or validating token
-	if (authLoading || validating) {
+	if (authLoading) {
 		return (
 			<div className="container mx-auto flex min-h-screen items-center justify-center p-4">
 				<Card className="w-full max-w-md">
@@ -97,7 +72,7 @@ export function JoinGroupPage({ token }: JoinGroupPageProps) {
 	}
 
 	// Error state for invalid token
-	if (validationError) {
+	if (joinMutation.isError) {
 		return (
 			<div className="container mx-auto flex min-h-screen items-center justify-center p-4">
 				<Card className="w-full max-w-md">
@@ -144,52 +119,30 @@ export function JoinGroupPage({ token }: JoinGroupPageProps) {
 								>
 									Sign In to Join
 								</Button>
+								<div className="mt-2">
+									<button
+										type="button"
+										onClick={() => {
+											setAuthMode('signup')
+											setShowAuthModal(true)
+										}}
+										className="text-primary text-sm hover:underline"
+									>
+										Don't have an account? Sign up
+									</button>
+								</div>
 							</div>
 						</CardContent>
 					</Card>
 				</div>
 
-				<AuthModal
-					isOpen={showAuthModal}
-					onClose={() => setShowAuthModal(false)}
-					title={authMode === 'signin' ? 'Sign In' : 'Sign Up'}
-					description="Join the group and start collaborating on shopping lists"
-				>
-					{authMode === 'signin' ? (
-						<div className="space-y-4">
-							<SignInForm onSuccess={handleAuthSuccess} />
-							<div className="text-center">
-								<button
-									type="button"
-									onClick={() => setAuthMode('signup')}
-									className="text-primary text-sm hover:underline"
-								>
-									Don't have an account? Sign up
-								</button>
-							</div>
-						</div>
-					) : (
-						<div className="space-y-4">
-							<SignUpForm onSuccess={handleAuthSuccess} />
-							<div className="text-center">
-								<button
-									type="button"
-									onClick={() => setAuthMode('signin')}
-									className="text-primary text-sm hover:underline"
-								>
-									Already have an account? Sign in
-								</button>
-							</div>
-						</div>
-					)}
-				</AuthModal>
+				{authMode === 'signin' ? (
+					<SignInModal isOpen={showAuthModal} onClose={handleAuthSuccess} />
+				) : (
+					<SignUpModal isOpen={showAuthModal} onClose={handleAuthSuccess} />
+				)}
 			</>
 		)
-	}
-
-	// Main join group interface for authenticated users
-	if (!groupInfo) {
-		return null // This shouldn't happen if validation passed
 	}
 
 	return (

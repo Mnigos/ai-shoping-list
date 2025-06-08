@@ -2,7 +2,7 @@ import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 import { getQueryClient } from '~/lib/trpc/react'
 import { createTRPC } from '~/lib/trpc/server'
 import { GroupsPage } from '~/modules/group/components/groups-page'
-import type { Route } from './+types/groups'
+import type { Route } from './+types/groups.route'
 
 export function meta() {
 	return [
@@ -18,8 +18,10 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 	const queryClient = getQueryClient()
 	const trpc = await createTRPC(loaderArgs)
 
-	// Prefetch user's groups
-	await queryClient.prefetchQuery(trpc.group.getMyGroups.queryOptions())
+	await Promise.all([
+		queryClient.prefetchQuery(trpc.group.getMyGroups.queryOptions()),
+		queryClient.prefetchQuery(trpc.group.getMyGroupsOverview.queryOptions()),
+	])
 
 	return {
 		queryClient: dehydrate(queryClient),

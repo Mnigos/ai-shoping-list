@@ -85,7 +85,7 @@ model Group {
   id          String   @id @default(cuid())
   name        String
   description String?
-  inviteCode  String   @unique @default(cuid())
+  inviteCode  String?   @unique
   isPersonal  Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

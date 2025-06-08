@@ -1,30 +1,24 @@
-import type { ShoppingListItem } from '@prisma/client'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { authClient } from '~/lib/auth-client'
+import { useParams } from 'react-router'
 import { useTRPC } from '~/lib/trpc/react'
-import { useActiveGroupData } from '~/modules/group/hooks/use-active-group'
-
-type ShoppingListItemWithCreator = ShoppingListItem & {
-	createdBy: {
-		id: string
-		name: string
-	}
-}
 
 export function useAddItemMutation() {
 	const trpc = useTRPC()
 	const queryClient = useQueryClient()
-	const { data } = authClient.useSession()
-	const { activeGroupId } = useActiveGroupData()
+
+	// !REFACTOR: create useActiveGroupId hook
+	const { id } = useParams()
+
+	if (!id) throw new Error('GroupId not found')
 
 	return useMutation(
 		trpc.shoppingList.addItem.mutationOptions({
 			onSuccess: () => {
 				// Invalidate the shopping list query for the active group
-				if (activeGroupId) {
+				if (id) {
 					queryClient.invalidateQueries({
 						queryKey: trpc.shoppingList.getItems.queryKey({
-							groupId: activeGroupId,
+							groupId: id,
 						}),
 					})
 				}
