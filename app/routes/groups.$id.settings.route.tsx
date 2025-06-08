@@ -1,15 +1,15 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 import { getQueryClient } from '~/lib/trpc/react'
 import { createTRPC } from '~/lib/trpc/server'
-import { JoinGroupPage } from '~/modules/group/components/join-group-page'
-import type { Route } from './+types/join-group.$token'
+import { GroupSettingsPage } from '~/modules/group/components/group-settings-page'
+import type { Route } from './+types/groups.$id.settings.route'
 
 export function meta({ params }: Route.MetaArgs) {
 	return [
-		{ title: 'Join Group - AI Shopping List' },
+		{ title: 'Group Settings - AI Shopping List' },
 		{
 			name: 'description',
-			content: 'Join a shopping list group and start collaborating',
+			content: 'Manage group settings, members, and invitations',
 		},
 	]
 }
@@ -17,30 +17,28 @@ export function meta({ params }: Route.MetaArgs) {
 export async function loader(loaderArgs: Route.LoaderArgs) {
 	const queryClient = getQueryClient()
 	const trpc = await createTRPC(loaderArgs)
-	const { token } = loaderArgs.params
+	const { id } = loaderArgs.params
 
-	// Pre-validate the invite token if possible
 	try {
 		await queryClient.prefetchQuery(
-			trpc.group.validateInviteToken.queryOptions({ token }),
+			trpc.group.getGroupDetails.queryOptions({ id }),
 		)
 	} catch (error) {
-		// If validation fails, we'll handle it in the component
-		console.warn('Failed to prefetch invite token validation:', error)
+		console.error('Failed to prefetch group data:', error)
 	}
 
 	return {
 		queryClient: dehydrate(queryClient),
-		token,
+		id,
 	}
 }
 
-export default function JoinGroupRoute({
-	loaderData: { queryClient, token },
+export default function GroupSettingsRoute({
+	loaderData: { queryClient, id },
 }: Route.ComponentProps) {
 	return (
 		<HydrationBoundary state={queryClient}>
-			<JoinGroupPage code={token} />
+			<GroupSettingsPage groupId={id} />
 		</HydrationBoundary>
 	)
 }

@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { type PropsWithChildren, useState } from 'react'
 import { AnonymousUserGuard } from '~/shared/components/auth/anonymous-user-guard'
 import { Button } from '~/shared/components/ui/button'
 import {
@@ -13,21 +13,10 @@ import {
 } from '~/shared/components/ui/dialog'
 import { Input } from '~/shared/components/ui/input'
 import { Label } from '~/shared/components/ui/label'
-import {
-	useJoinGroupMutation,
-	useValidateInviteCodeQuery,
-} from '../hooks/use-join-group-mutation'
+import { useJoinGroupMutation } from '../hooks/use-join-group.mutation'
 import { GroupPreview } from './group-preview'
 
-interface JoinGroupDialogProps {
-	children: React.ReactNode
-	onGroupJoined?: (group: { id: string; name: string }) => void
-}
-
-export function JoinGroupDialog({
-	children,
-	onGroupJoined,
-}: JoinGroupDialogProps) {
+export function JoinGroupDialog({ children }: Readonly<PropsWithChildren>) {
 	const [open, setOpen] = useState(false)
 	const [inviteCode, setInviteCode] = useState('')
 	const [hasAttemptedValidation, setHasAttemptedValidation] = useState(false)
@@ -36,9 +25,6 @@ export function JoinGroupDialog({
 
 	// Only validate when user has typed something and stopped typing
 	const shouldValidate = inviteCode.trim().length > 0 && hasAttemptedValidation
-	const validationQuery = useValidateInviteCodeQuery(
-		shouldValidate ? inviteCode.trim() : null,
-	)
 
 	function handleSubmit(event: React.FormEvent) {
 		event.preventDefault()
@@ -53,7 +39,6 @@ export function JoinGroupDialog({
 		}
 
 		// If validation failed, don't proceed
-		if (validationQuery.isError) return
 
 		joinGroupMutation.mutate(
 			{ inviteCode: trimmedCode },
@@ -62,7 +47,6 @@ export function JoinGroupDialog({
 					setOpen(false)
 					setInviteCode('')
 					setHasAttemptedValidation(false)
-					onGroupJoined?.(group)
 				},
 			},
 		)

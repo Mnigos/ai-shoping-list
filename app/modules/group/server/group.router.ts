@@ -1,93 +1,87 @@
 import type { TRPCRouterRecord } from '@trpc/server'
-import {
-	GenerateInviteCodeInputSchema,
-	GenerateInviteLinkInputSchema,
-	JoinViaCodeInputSchema,
-	JoinViaTokenInputSchema,
-	ValidateInviteCodeInputSchema,
-	ValidateInviteTokenInputSchema,
-} from './group-invite.service'
-import {
-	GetMembersInputSchema,
-	LeaveGroupInputSchema,
-	RemoveMemberInputSchema,
-	UpdateRoleInputSchema,
-} from './group-member.service'
 import { groupProcedure } from './group.procedure'
 import {
-	CreateGroupInputSchema,
-	DeleteGroupInputSchema,
-	GetGroupDetailsInputSchema,
-	TransferShoppingListInputSchema,
-	UpdateGroupInputSchema,
-} from './group.service'
+	CreateGroupInput,
+	CreateGroupOutput,
+	DeleteGroupInput,
+	DeleteGroupOutput,
+	GetGroupInput,
+	GetGroupOutput,
+	JoinGroupInput,
+	JoinGroupOutput,
+	LeaveGroupInput,
+	LeaveGroupOutput,
+	MyGroupDetailsOutput,
+	MyGroupsOutput,
+	MyGroupsOverviewOutput,
+	RegenerateInviteCodeInput,
+	RegenerateInviteCodeOutput,
+	RemoveMemberInput,
+	RemoveMemberOutput,
+	UpdateGroupInput,
+	UpdateGroupOutput,
+	UpdateRoleInput,
+	UpdateRoleOutput,
+} from './schemas'
 
 export const groupRouter = {
-	getMyGroups: groupProcedure.query(async ({ ctx }) =>
-		ctx.service.getMyGroups(),
-	),
+	getMyGroups: groupProcedure
+		.output(MyGroupsOutput)
+		.query(async ({ ctx }) => ctx.service.getMyGroups()),
+
+	getMyGroupsOverview: groupProcedure
+		.output(MyGroupsOverviewOutput)
+		.query(async ({ ctx }) => ctx.service.getMyGroupsOverview()),
+
+	getGroup: groupProcedure
+		.input(GetGroupInput)
+		.output(GetGroupOutput)
+		.query(async ({ ctx, input }) => ctx.service.getGroup(input)),
 
 	getGroupDetails: groupProcedure
-		.input(GetGroupDetailsInputSchema)
+		.input(GetGroupInput)
+		.output(MyGroupDetailsOutput)
 		.query(async ({ ctx, input }) => ctx.service.getGroupDetails(input)),
 
 	createGroup: groupProcedure
-		.input(CreateGroupInputSchema)
+		.input(CreateGroupInput)
+		.output(CreateGroupOutput)
 		.mutation(async ({ ctx, input }) => ctx.service.createGroup(input)),
 
 	updateGroup: groupProcedure
-		.input(UpdateGroupInputSchema)
+		.input(UpdateGroupInput)
+		.output(UpdateGroupOutput)
 		.mutation(async ({ ctx, input }) => ctx.service.updateGroup(input)),
 
 	deleteGroup: groupProcedure
-		.input(DeleteGroupInputSchema)
+		.input(DeleteGroupInput)
+		.output(DeleteGroupOutput)
 		.mutation(async ({ ctx, input }) => ctx.service.deleteGroup(input)),
 
-	transferShoppingList: groupProcedure
-		.input(TransferShoppingListInputSchema)
+	regenerateInviteCode: groupProcedure
+		.input(RegenerateInviteCodeInput)
+		.output(RegenerateInviteCodeOutput)
 		.mutation(async ({ ctx, input }) =>
-			ctx.service.transferShoppingList(input),
+			ctx.service.regenerateInviteCode(input),
 		),
 
-	generateInviteCode: groupProcedure
-		.input(GenerateInviteCodeInputSchema)
-		.mutation(async ({ ctx, input }) => ctx.service.generateInviteCode(input)),
-
-	validateInviteCode: groupProcedure
-		.input(ValidateInviteCodeInputSchema)
-		.query(async ({ ctx, input }) => ctx.service.validateInviteCode(input)),
-
-	joinViaCode: groupProcedure
-		.input(JoinViaCodeInputSchema)
-		.mutation(async ({ ctx, input }) => ctx.service.joinViaCode(input)),
-
-	// New invite link endpoints
-	generateInviteLink: groupProcedure
-		.input(GenerateInviteLinkInputSchema)
-		.mutation(async ({ ctx, input }) => ctx.service.generateInviteLink(input)),
-
-	validateInviteToken: groupProcedure
-		.input(ValidateInviteTokenInputSchema)
-		.query(async ({ ctx, input }) => ctx.service.validateInviteToken(input)),
-
-	joinViaToken: groupProcedure
-		.input(JoinViaTokenInputSchema)
-		.mutation(async ({ ctx, input }) => ctx.service.joinViaToken(input)),
-
-	// Member management routes
-	getMembers: groupProcedure
-		.input(GetMembersInputSchema)
-		.query(async ({ ctx, input }) => ctx.service.getMembers(input)),
+	joinGroup: groupProcedure
+		.input(JoinGroupInput)
+		.output(JoinGroupOutput)
+		.mutation(async ({ ctx, input }) => ctx.service.joinGroup(input)),
 
 	removeMember: groupProcedure
-		.input(RemoveMemberInputSchema)
+		.input(RemoveMemberInput)
+		.output(RemoveMemberOutput)
 		.mutation(async ({ ctx, input }) => ctx.service.removeMember(input)),
 
 	updateRole: groupProcedure
-		.input(UpdateRoleInputSchema)
+		.input(UpdateRoleInput)
+		.output(UpdateRoleOutput)
 		.mutation(async ({ ctx, input }) => ctx.service.updateRole(input)),
 
 	leaveGroup: groupProcedure
-		.input(LeaveGroupInputSchema)
+		.input(LeaveGroupInput)
+		.output(LeaveGroupOutput)
 		.mutation(async ({ ctx, input }) => ctx.service.leaveGroup(input)),
 } satisfies TRPCRouterRecord

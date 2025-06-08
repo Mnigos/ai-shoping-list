@@ -1,4 +1,5 @@
-import { Check, ChevronDown, Users } from 'lucide-react'
+import { Check, ChevronDown, Plus, UserPlus, Users } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router'
 import { Button } from '~/shared/components/ui/button'
 import {
 	Popover,
@@ -6,15 +7,18 @@ import {
 	PopoverTrigger,
 } from '~/shared/components/ui/popover'
 import { cn } from '~/shared/utils/cn'
-import { useActiveGroupData } from '../hooks/use-active-group'
+import { useMyGroupsQuery } from '../hooks/use-my-groups.query'
+import { CreateGroupDialog } from './create-group-dialog'
+import { JoinGroupDialog } from './join-group-dialog'
 
 interface GroupSelectorProps {
 	className?: string
 }
 
 export function GroupSelector({ className }: GroupSelectorProps) {
-	const { activeGroup, availableGroups, setActiveGroup, isLoading } =
-		useActiveGroupData()
+	const { data: myGroups, isLoading } = useMyGroupsQuery()
+	const { id } = useParams()
+	const navigate = useNavigate()
 
 	if (isLoading) {
 		return (
@@ -27,9 +31,11 @@ export function GroupSelector({ className }: GroupSelectorProps) {
 		)
 	}
 
-	if (availableGroups.length <= 1) {
+	if (!myGroups || myGroups.length <= 1) {
 		return null
 	}
+
+	const activeGroup = myGroups.find(group => group.id === id)
 
 	return (
 		<div className={cn('flex items-center gap-2', className)}>
@@ -50,34 +56,41 @@ export function GroupSelector({ className }: GroupSelectorProps) {
 						<ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent className="w-[200px] p-0">
-					<div className="max-h-[300px] overflow-auto">
-						{availableGroups.map(group => (
-							<button
+				<PopoverContent className="p-1">
+					<div className="flex max-h-[300px] flex-col overflow-auto">
+						<CreateGroupDialog>
+							<Button variant="ghost" className="justify-start">
+								<Plus className="h-4 w-4" />
+								Create Group
+							</Button>
+						</CreateGroupDialog>
+
+						<JoinGroupDialog>
+							<Button variant="ghost" className="justify-start">
+								<UserPlus className="h-4 w-4" />
+								Join Group
+							</Button>
+						</JoinGroupDialog>
+
+						{myGroups.map(group => (
+							<Button
 								key={group.id}
-								type="button"
 								className={cn(
-									'relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
+									'justify-start px-3',
 									activeGroup?.id === group.id &&
 										'bg-accent text-accent-foreground',
 								)}
-								onClick={() => setActiveGroup(group.id)}
+								variant="ghost"
+								onClick={() => navigate(`/groups/${group.id}`)}
 							>
 								<div className="flex items-center gap-2">
 									<Users className="h-4 w-4" />
-									<div className="flex flex-col items-start">
-										<span className="truncate font-medium">{group.name}</span>
-										{group.isPersonal && (
-											<span className="text-muted-foreground text-xs">
-												Personal
-											</span>
-										)}
-									</div>
+									{group.name}
 								</div>
 								{activeGroup?.id === group.id && (
 									<Check className="ml-auto h-4 w-4" />
 								)}
-							</button>
+							</Button>
 						))}
 					</div>
 				</PopoverContent>

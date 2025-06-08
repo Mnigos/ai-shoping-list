@@ -267,7 +267,7 @@ describe('GroupInviteService', () => {
 			mockPrisma.group.findUnique.mockResolvedValue(null) // For ensureUniqueInviteCode
 			mockPrisma.group.update.mockResolvedValue(mockUpdatedGroup)
 
-			const result = await service.generateInviteCode(validInput)
+			const result = await service.generateInviteCodeE(validInput)
 
 			expect(mockPrisma.groupMember.findUnique).toHaveBeenCalledWith({
 				where: {
@@ -306,7 +306,7 @@ describe('GroupInviteService', () => {
 		test('should throw NOT_FOUND when user is not a member', async () => {
 			mockPrisma.groupMember.findUnique.mockResolvedValue(null)
 
-			await expect(service.generateInviteCode(validInput)).rejects.toThrow(
+			await expect(service.generateInviteCodeE(validInput)).rejects.toThrow(
 				new TRPCError({
 					code: 'NOT_FOUND',
 					message: 'Group not found or you are not a member',
@@ -322,7 +322,7 @@ describe('GroupInviteService', () => {
 
 			mockPrisma.groupMember.findUnique.mockResolvedValue(mockMembership)
 
-			await expect(service.generateInviteCode(validInput)).rejects.toThrow(
+			await expect(service.generateInviteCodeE(validInput)).rejects.toThrow(
 				new TRPCError({
 					code: 'FORBIDDEN',
 					message: 'Only group admins can generate invite codes',
@@ -338,7 +338,7 @@ describe('GroupInviteService', () => {
 
 			mockPrisma.groupMember.findUnique.mockResolvedValue(mockMembership)
 
-			await expect(service.generateInviteCode(validInput)).rejects.toThrow(
+			await expect(service.generateInviteCodeE(validInput)).rejects.toThrow(
 				new TRPCError({
 					code: 'BAD_REQUEST',
 					message: 'Personal groups cannot have invite codes',

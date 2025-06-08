@@ -9,9 +9,9 @@ export {
 export { useGroupMembers } from './use-member-management'
 
 // Mutation hooks
-export { useCreateGroupMutation } from './use-create-group-mutation'
+export { useCreateGroupMutation } from './use-create-group.mutation'
 export { useUpdateGroupMutation } from './use-update-group-mutation'
-export { useDeleteGroupMutation } from './use-delete-group-mutation'
+export { useDeleteGroupMutation } from './use-delete-group.mutation'
 export { useJoinGroupMutation } from './use-join-group-mutation'
 export { useGenerateInviteCodeMutation } from './use-generate-invite-code-mutation'
 export { useTransferListMutation } from './use-transfer-list-mutation'

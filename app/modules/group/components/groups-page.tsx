@@ -1,45 +1,14 @@
-import { ExternalLink, Plus, Settings, Users } from 'lucide-react'
+import { ExternalLink, Plus, Users } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router'
-import { Badge } from '~/shared/components/ui/badge'
 import { Button } from '~/shared/components/ui/button'
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '~/shared/components/ui/card'
-import { useGroups } from '../hooks/use-groups'
+import { useMyGroupsOverviewQuery } from '../hooks/use-my-groups-overview.query'
 import { CreateGroupDialog } from './create-group-dialog'
+import { GroupCard } from './group-card'
 import { JoinGroupDialog } from './join-group-dialog'
 
 export function GroupsPage() {
-	const { data: groups, isLoading } = useGroups()
+	const { data: groups } = useMyGroupsOverviewQuery()
 	const [showJoinDialog, setShowJoinDialog] = useState(false)
-
-	if (isLoading) {
-		return (
-			<div className="container mx-auto p-6">
-				<div className="mb-6 flex items-center justify-between">
-					<h1 className="font-bold text-3xl">My Groups</h1>
-				</div>
-				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-					{Array.from({ length: 3 }).map((_, i) => (
-						<Card key={i} className="animate-pulse">
-							<CardHeader>
-								<div className="mb-2 h-6 w-3/4 rounded bg-gray-200" />
-								<div className="h-4 w-full rounded bg-gray-200" />
-							</CardHeader>
-							<CardContent>
-								<div className="h-4 w-1/2 rounded bg-gray-200" />
-							</CardContent>
-						</Card>
-					))}
-				</div>
-			</div>
-		)
-	}
 
 	const personalGroups = groups?.filter(group => group.isPersonal) || []
 	const collaborativeGroups = groups?.filter(group => !group.isPersonal) || []
@@ -108,73 +77,5 @@ export function GroupsPage() {
 				</JoinGroupDialog>
 			)}
 		</div>
-	)
-}
-
-interface GroupCardProps {
-	group: {
-		id: string
-		name: string
-		description?: string | null
-		isPersonal: boolean
-		myRole: 'ADMIN' | 'MEMBER'
-		members?: Array<{
-			id: string
-			user: {
-				id: string
-				name: string | null
-				email: string
-			}
-		}>
-		_count?: {
-			shoppingListItems: number
-		}
-	}
-}
-
-function GroupCard({ group }: GroupCardProps) {
-	return (
-		<Card className="transition-shadow hover:shadow-md">
-			<CardHeader>
-				<div className="flex items-start justify-between">
-					<div className="flex-1">
-						<CardTitle className="text-lg">{group.name}</CardTitle>
-						{group.description && (
-							<CardDescription className="mt-1">
-								{group.description}
-							</CardDescription>
-						)}
-					</div>
-					<div className="flex items-center gap-2">
-						{group.isPersonal && (
-							<Badge variant="secondary" className="text-xs">
-								Personal
-							</Badge>
-						)}
-						<Badge
-							variant={group.myRole === 'ADMIN' ? 'default' : 'outline'}
-							className="text-xs"
-						>
-							{group.myRole}
-						</Badge>
-					</div>
-				</div>
-			</CardHeader>
-			<CardContent>
-				<div className="flex items-center justify-between">
-					<div className="flex items-center text-gray-500 text-sm">
-						<Users className="mr-1 h-4 w-4" />
-						{group.members?.length || 0} member
-						{(group.members?.length || 0) !== 1 ? 's' : ''}
-					</div>
-					<Link to={`/groups/${group.id}`}>
-						<Button variant="ghost" size="sm">
-							<Settings className="mr-1 h-4 w-4" />
-							Manage
-						</Button>
-					</Link>
-				</div>
-			</CardContent>
-		</Card>
 	)
 }

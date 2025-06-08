@@ -1,4 +1,4 @@
-import { Copy, ExternalLink, RefreshCw } from 'lucide-react'
+import { Copy, ExternalLink } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '~/shared/components/ui/button'
 import {
@@ -10,7 +10,6 @@ import {
 } from '~/shared/components/ui/dialog'
 import { Input } from '~/shared/components/ui/input'
 import { Label } from '~/shared/components/ui/label'
-import { useGenerateInviteLinkMutation } from '../hooks/use-invite-links'
 
 interface InviteLinkDialogProps {
 	groupId: string
@@ -38,33 +37,6 @@ export function InviteLinkDialog({
 		type: 'success' | 'error'
 		text: string
 	} | null>(null)
-
-	const generateLinkMutation = useGenerateInviteLinkMutation()
-
-	function handleGenerateLink() {
-		generateLinkMutation.mutate(
-			{
-				groupId,
-				expiresInHours: Number.parseInt(expiresInHours, 10),
-			},
-			{
-				onSuccess: (data: InviteLinkResult) => {
-					setGeneratedLink(data.inviteUrl)
-					setExpiresAt(data.expiresAt)
-					setMessage({
-						type: 'success',
-						text: 'Invite link generated successfully!',
-					})
-				},
-				onError: error => {
-					setMessage({
-						type: 'error',
-						text: error.message || 'Failed to generate invite link',
-					})
-				},
-			},
-		)
-	}
 
 	async function handleCopyLink() {
 		if (!generatedLink) return
@@ -139,20 +111,7 @@ export function InviteLinkDialog({
 						</select>
 					</div>
 
-					<Button
-						onClick={handleGenerateLink}
-						disabled={generateLinkMutation.isPending}
-						className="w-full"
-					>
-						{generateLinkMutation.isPending ? (
-							<>
-								<RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-								Generating...
-							</>
-						) : (
-							'Generate Invite Link'
-						)}
-					</Button>
+					<Button className="w-full">Generate Invite Link</Button>
 
 					{generatedLink && (
 						<div className="space-y-3">
