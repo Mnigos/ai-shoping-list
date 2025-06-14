@@ -5,16 +5,18 @@ import { Loader2 } from 'lucide-react'
 import { type FormEvent, useEffect, useRef, useTransition } from 'react'
 import { useTRPC } from '~/lib/trpc/react'
 import { useChatStore } from '~/modules/chat/stores/chat.store'
+import type { ShoppingListActionSchema } from '~/modules/shopping-list/server/shopping-list-action.service'
 import { Button } from '~/shared/components/ui/button'
 import { Textarea } from '~/shared/components/ui/textarea'
 import { cn } from '~/shared/utils/cn'
 import { ChatMessage } from './chat-message'
 
 interface ChatProps {
+	groupId: string
 	className?: string
 }
 
-export function Chat({ className }: Readonly<ChatProps>) {
+export function Chat({ groupId, className }: Readonly<ChatProps>) {
 	const formRef = useRef<HTMLFormElement>(null)
 	const messagesEndRef = useRef<HTMLDivElement>(null)
 	const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -33,7 +35,7 @@ export function Chat({ className }: Readonly<ChatProps>) {
 		trpc.shoppingList.executeActions.mutationOptions({
 			onSuccess: () => {
 				queryClient.invalidateQueries({
-					queryKey: trpc.shoppingList.getItems.queryKey(),
+					queryKey: trpc.shoppingList.getItems.queryKey({ groupId }),
 				})
 			},
 		}),
@@ -81,26 +83,33 @@ export function Chat({ className }: Readonly<ChatProps>) {
 				})
 
 				// 3. Collect actions and assistant message
-				const actionsMap = new Map<
-					string,
-					{
-						action: 'add' | 'update' | 'delete' | 'complete'
-						name: string
-						amount?: number
-					}
-				>()
+				const actionsMap = new Map<string, ShoppingListActionSchema>()
 				let assistantMessage = ''
 
 				for await (const chunk of result) {
 					if (chunk?.actions && Array.isArray(chunk.actions))
 						for (const chunkAction of chunk.actions)
-							if (chunkAction?.action && chunkAction?.name)
+							if (chunkAction?.action && chunkAction?.name) {
 								// Use item name + action as key to prevent duplicates
-								actionsMap.set(`${chunkAction.name}-${chunkAction.action}`, {
-									action: chunkAction.action,
-									name: chunkAction.name,
-									amount: chunkAction.amount,
-								})
+								const actionKey = `${chunkAction.name}-${chunkAction.action}`
+
+								// Build action object based on action type
+								if (
+									chunkAction.action === 'add' ||
+									chunkAction.action === 'update'
+								) {
+									actionsMap.set(actionKey, {
+										action: chunkAction.action,
+										name: chunkAction.name,
+										amount: chunkAction.amount || 1,
+									})
+								} else {
+									actionsMap.set(actionKey, {
+										action: chunkAction.action,
+										name: chunkAction.name,
+									})
+								}
+							}
 
 					if (chunk?.message) assistantMessage = chunk.message
 				}
@@ -109,7 +118,7 @@ export function Chat({ className }: Readonly<ChatProps>) {
 
 				// 4. Execute shopping list actions in database FIRST
 				if (allActions.length > 0) {
-					await executeShoppingListActions({ actions: allActions })
+					await executeShoppingListActions({ actions: allActions, groupId })
 				}
 
 				// 5. Only add assistant message to chat store AFTER successful action execution

@@ -1,10 +1,8 @@
 import { vi } from 'vitest'
 import type { ProtectedContext } from '~/lib/trpc/t'
-import {
-	type PrismaTransaction,
-	type ShoppingListActionSchema,
-	ShoppingListActionsService,
-} from './shopping-list-action.service'
+import type { PrismaTransaction } from '~/shared/types/prisma'
+import type { ShoppingListActionSchema } from './shopping-list-action.service'
+import { ShoppingListActionsService } from './shopping-list-action.service'
 
 const mockShoppingListItem = {
 	findFirst: vi.fn(),

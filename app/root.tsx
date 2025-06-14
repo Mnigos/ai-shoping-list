@@ -11,11 +11,12 @@ import {
 import type { PropsWithChildren } from 'react'
 import type { Route } from './+types/root'
 import { clientEnv } from './env.client'
-import { TRPCReactProvider } from './lib/trpc/react'
+import { TRPCReactProvider, getQueryClient } from './lib/trpc/react'
 
 import './app.css'
 import { NavigationBar } from '~/shared/components/navigation-bar'
 import { auth } from './lib/auth.server'
+import { createTRPC } from './lib/trpc/server'
 
 export const links: Route.LinksFunction = () => [
 	{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -53,7 +54,16 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 			})
 	}
 
-	return session
+	const queryClient = getQueryClient()
+	const trpc = await createTRPC(loaderArgs)
+
+	return {
+		...session,
+		context: {
+			trpc,
+			queryClient,
+		},
+	}
 }
 
 export function Layout({ children }: PropsWithChildren) {

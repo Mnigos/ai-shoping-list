@@ -1,19 +1,18 @@
-import { useQuery } from '@tanstack/react-query'
 import { type FormEvent, useRef } from 'react'
-import { useTRPC } from '~/lib/trpc/react'
 import { Button } from '~/shared/components/ui/button'
 import { Input } from '~/shared/components/ui/input'
 import { useAddItemMutation } from '../hooks/use-add-item-mutation'
+import { useShoppingListItems } from '../hooks/use-shopping-list-items'
 import { ShoppingListItem } from './shopping-list-item'
 
-export function ShoppingList() {
-	const formRef = useRef<HTMLFormElement>(null)
-	const trpc = useTRPC()
-	const addItemMutation = useAddItemMutation()
+interface ShoppingListProps {
+	groupId: string
+}
 
-	const { data: items = [] } = useQuery(
-		trpc.shoppingList.getItems.queryOptions(),
-	)
+export function ShoppingList({ groupId }: Readonly<ShoppingListProps>) {
+	const formRef = useRef<HTMLFormElement>(null)
+	const addItemMutation = useAddItemMutation()
+	const { data: items = [] } = useShoppingListItems(groupId)
 
 	function handleSubmit(event: FormEvent) {
 		event.preventDefault()
@@ -22,7 +21,7 @@ export function ShoppingList() {
 		const name = formData.get('name') as string
 		const amount = Number(formData.get('amount')) ?? 1
 
-		addItemMutation.mutate({ name, amount })
+		addItemMutation.mutate({ name, amount, groupId })
 		formRef.current?.reset()
 	}
 

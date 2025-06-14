@@ -1,30 +1,27 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useParams } from 'react-router'
 import { useTRPC } from '~/lib/trpc/react'
-import {
-	createOptimisticErrorHandler,
-	createOptimisticSettledHandler,
-	createOptimisticUpdate,
-} from './helpers/optimistic-updates'
 
 export function useUpdateItemMutation() {
 	const trpc = useTRPC()
 	const queryClient = useQueryClient()
-	const queryKey = trpc.shoppingList.getItems.queryKey()
+	// !REFACTOR: create useActiveGroupId hook
+	const { id } = useParams()
 
-	const optimisticUpdate = createOptimisticUpdate({
-		queryClient,
-		queryKey,
-		updateFn: (items, variables: { id: string; amount: number }) =>
-			items.map(item =>
-				item.id === variables.id ? { ...item, amount: variables.amount } : item,
-			),
-	})
+	if (!id) throw new Error('GroupId not found')
 
 	return useMutation(
 		trpc.shoppingList.updateItem.mutationOptions({
-			onMutate: optimisticUpdate,
-			onError: createOptimisticErrorHandler(queryClient, queryKey),
-			onSettled: createOptimisticSettledHandler(queryClient, queryKey),
+			onSuccess: () => {
+				// Invalidate the shopping list query for the active group
+				if (id) {
+					queryClient.invalidateQueries({
+						queryKey: trpc.shoppingList.getItems.queryKey({
+							groupId: id,
+						}),
+					})
+				}
+			},
 		}),
 	)
 }
