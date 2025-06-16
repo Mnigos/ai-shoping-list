@@ -1,10 +1,6 @@
-import { TRPCError } from '@trpc/server'
 import type { ProtectedContext } from '~/lib/trpc/t'
+import { GroupError } from './errors'
 import { GroupInviteService } from './group-invite.service'
-import {
-	GroupMemberService,
-	type UpdateRoleInput,
-} from './group-member.service'
 import type {
 	CreateGroupInput,
 	CreateGroupOutput,
@@ -12,29 +8,20 @@ import type {
 	DeleteGroupOutput,
 	GetGroupInput,
 	GetGroupOutput,
-	JoinGroupInput,
-	JoinGroupOutput,
-	LeaveGroupInput,
-	LeaveGroupOutput,
 	MyGroupDetailsOutput,
 	MyGroupsOutput,
 	MyGroupsOverviewOutput,
 	RegenerateInviteCodeInput,
 	RegenerateInviteCodeOutput,
-	RemoveMemberInput,
-	RemoveMemberOutput,
 	UpdateGroupInput,
 	UpdateGroupOutput,
-	UpdateRoleOutput,
 } from './schemas'
 
 export class GroupService {
 	private readonly inviteService: GroupInviteService
-	private readonly memberService: GroupMemberService
 
 	constructor(private readonly ctx: ProtectedContext) {
 		this.inviteService = new GroupInviteService(this.ctx)
-		this.memberService = new GroupMemberService(this.ctx)
 	}
 
 	async getMyGroups(): Promise<MyGroupsOutput> {
@@ -83,11 +70,7 @@ export class GroupService {
 		return foundGroups.map(({ members, ...group }) => {
 			const myRole = members.find(m => m.user.id === this.ctx.user.id)?.role
 
-			if (!myRole)
-				throw new TRPCError({
-					code: 'FORBIDDEN',
-					message: 'You are not a member of this group',
-				})
+			if (!myRole) throw new GroupError('NOT_GROUP_MEMBER')
 
 			return {
 				...group,
@@ -97,9 +80,9 @@ export class GroupService {
 		})
 	}
 
-	async getGroup(input: GetGroupInput): Promise<GetGroupOutput> {
+	async getGroup({ id }: GetGroupInput): Promise<GetGroupOutput> {
 		const foundGroup = await this.ctx.prisma.group.findUnique({
-			where: { id: input.id, members: { some: { userId: this.ctx.user.id } } },
+			where: { id, members: { some: { userId: this.ctx.user.id } } },
 			select: {
 				id: true,
 				name: true,
@@ -123,10 +106,7 @@ export class GroupService {
 		)?.role
 
 		if (!foundGroup || !myRole)
-			throw new TRPCError({
-				code: 'NOT_FOUND',
-				message: 'Group not found or you are not a member',
-			})
+			throw new GroupError('GROUP_NOT_FOUND_OR_NOT_MEMBER')
 
 		return {
 			...foundGroup,
@@ -135,9 +115,9 @@ export class GroupService {
 		}
 	}
 
-	async getGroupDetails(input: GetGroupInput): Promise<MyGroupDetailsOutput> {
+	async getGroupDetails({ id }: GetGroupInput): Promise<MyGroupDetailsOutput> {
 		const foundGroup = await this.ctx.prisma.group.findUnique({
-			where: { id: input.id, members: { some: { userId: this.ctx.user.id } } },
+			where: { id, members: { some: { userId: this.ctx.user.id } } },
 			select: {
 				id: true,
 				name: true,
@@ -166,10 +146,7 @@ export class GroupService {
 		)?.role
 
 		if (!foundGroup || !myRole)
-			throw new TRPCError({
-				code: 'NOT_FOUND',
-				message: 'Group not found or you are not a member',
-			})
+			throw new GroupError('GROUP_NOT_FOUND_OR_NOT_MEMBER')
 
 		console.log('members', foundGroup.members)
 
@@ -188,12 +165,15 @@ export class GroupService {
 		}
 	}
 
-	async createGroup(input: CreateGroupInput): Promise<CreateGroupOutput> {
+	async createGroup({
+		name,
+		description,
+	}: CreateGroupInput): Promise<CreateGroupOutput> {
 		try {
 			const createdGroup = await this.ctx.prisma.group.create({
 				data: {
-					name: input.name,
-					description: input.description,
+					name,
+					description,
 					members: {
 						create: {
 							userId: this.ctx.user.id,
@@ -224,11 +204,7 @@ export class GroupService {
 				m => m.user.id === this.ctx.user.id,
 			)?.role
 
-			if (!myRole)
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Failed to create group',
-				})
+			if (!myRole) throw new GroupError('GROUP_CREATION_FAILED')
 
 			return {
 				...createdGroup,
@@ -237,22 +213,22 @@ export class GroupService {
 			}
 		} catch (error) {
 			if (error instanceof Error && 'code' in error && error.code === 'P2002')
-				throw new TRPCError({
-					code: 'CONFLICT',
-					message:
-						'A group with this invite code already exists. Please try again.',
-				})
+				throw new GroupError('INVITE_CODE_CONFLICT')
 
 			throw error
 		}
 	}
 
-	async updateGroup(input: UpdateGroupInput): Promise<UpdateGroupOutput> {
+	async updateGroup({
+		id,
+		name,
+		description,
+	}: UpdateGroupInput): Promise<UpdateGroupOutput> {
 		const membership = await this.ctx.prisma.groupMember.findUnique({
 			where: {
 				userId_groupId: {
 					userId: this.ctx.user.id,
-					groupId: input.id,
+					groupId: id,
 				},
 			},
 			select: {
@@ -260,23 +236,14 @@ export class GroupService {
 			},
 		})
 
-		if (!membership)
-			throw new TRPCError({
-				code: 'NOT_FOUND',
-				message: 'Group not found or you are not a member',
-			})
+		if (!membership) throw new GroupError('GROUP_NOT_FOUND_OR_NOT_MEMBER')
 
 		if (membership.role !== 'ADMIN')
-			throw new TRPCError({
-				code: 'FORBIDDEN',
-				message: 'Only group admins can update group details',
-			})
+			throw new GroupError('ADMIN_ONLY_UPDATE_GROUP')
 
 		try {
-			const { name, description } = input
-
 			const updatedGroup = await this.ctx.prisma.group.update({
-				where: { id: input.id },
+				where: { id },
 				data: {
 					name,
 					description,
@@ -306,21 +273,18 @@ export class GroupService {
 			}
 		} catch (error) {
 			if (error instanceof Error && 'code' in error && error.code === 'P2025')
-				throw new TRPCError({
-					code: 'NOT_FOUND',
-					message: 'Group not found',
-				})
+				throw new GroupError('GROUP_NOT_FOUND')
 
 			throw error
 		}
 	}
 
-	async deleteGroup(input: DeleteGroupInput): Promise<DeleteGroupOutput> {
+	async deleteGroup({ id }: DeleteGroupInput): Promise<DeleteGroupOutput> {
 		const membership = await this.ctx.prisma.groupMember.findUnique({
 			where: {
 				userId_groupId: {
 					userId: this.ctx.user.id,
-					groupId: input.id,
+					groupId: id,
 				},
 			},
 			select: {
@@ -333,28 +297,18 @@ export class GroupService {
 			},
 		})
 
-		if (!membership)
-			throw new TRPCError({
-				code: 'NOT_FOUND',
-				message: 'Group not found or you are not a member',
-			})
+		if (!membership) throw new GroupError('GROUP_NOT_FOUND_OR_NOT_MEMBER')
 
 		if (membership.role !== 'ADMIN')
-			throw new TRPCError({
-				code: 'FORBIDDEN',
-				message: 'Only group admins can delete groups',
-			})
+			throw new GroupError('ADMIN_ONLY_DELETE_GROUP')
 
 		if (membership.group.isPersonal)
-			throw new TRPCError({
-				code: 'BAD_REQUEST',
-				message: 'Personal groups cannot be deleted',
-			})
+			throw new GroupError('PERSONAL_GROUP_CANNOT_DELETE')
 
 		try {
 			await this.ctx.prisma.group.delete({
 				where: {
-					id: input.id,
+					id,
 					members: { some: { userId: this.ctx.user.id, role: 'ADMIN' } },
 					isPersonal: false,
 				},
@@ -363,23 +317,20 @@ export class GroupService {
 			return { success: true }
 		} catch (error) {
 			if (error instanceof Error && 'code' in error && error.code === 'P2025')
-				throw new TRPCError({
-					code: 'NOT_FOUND',
-					message: 'Group not found',
-				})
+				throw new GroupError('GROUP_NOT_FOUND')
 
 			throw error
 		}
 	}
 
-	async regenerateInviteCode(
-		input: RegenerateInviteCodeInput,
-	): Promise<RegenerateInviteCodeOutput> {
+	async regenerateInviteCode({
+		id,
+	}: RegenerateInviteCodeInput): Promise<RegenerateInviteCodeOutput> {
 		const membership = await this.ctx.prisma.groupMember.findUnique({
 			where: {
 				userId_groupId: {
 					userId: this.ctx.user.id,
-					groupId: input.id,
+					groupId: id,
 				},
 			},
 			select: {
@@ -387,221 +338,23 @@ export class GroupService {
 			},
 		})
 
-		if (!membership)
-			throw new TRPCError({
-				code: 'NOT_FOUND',
-				message: 'Group not found or you are not a member',
-			})
+		if (!membership) throw new GroupError('GROUP_NOT_FOUND_OR_NOT_MEMBER')
 
 		if (membership.role !== 'ADMIN')
-			throw new TRPCError({
-				code: 'FORBIDDEN',
-				message: 'Only group admins can regenerate invite codes',
-			})
+			throw new GroupError('ADMIN_ONLY_REGENERATE_INVITE')
 
 		const inviteCode = this.inviteService.generateInviteCode()
 
 		try {
 			await this.ctx.prisma.group.update({
-				where: { id: input.id },
+				where: { id },
 				data: { inviteCode },
 			})
 
 			return { inviteCode }
 		} catch (error) {
 			if (error instanceof Error && 'code' in error && error.code === 'P2025')
-				throw new TRPCError({
-					code: 'NOT_FOUND',
-					message: 'Group not found',
-				})
-
-			throw error
-		}
-	}
-
-	async joinGroup(input: JoinGroupInput): Promise<JoinGroupOutput> {
-		const foundUser = await this.ctx.prisma.user.findUnique({
-			where: {
-				id: this.ctx.user.id,
-			},
-			select: {
-				id: true,
-				isAnonymous: true,
-			},
-		})
-
-		if (foundUser?.isAnonymous)
-			throw new TRPCError({
-				code: 'FORBIDDEN',
-				message: 'You must be signed in to join a group',
-			})
-
-		const foundGroup = await this.ctx.prisma.group.findUnique({
-			where: { inviteCode: input.inviteCode },
-			select: {
-				id: true,
-				members: {
-					select: {
-						userId: true,
-					},
-				},
-			},
-		})
-
-		if (!foundGroup)
-			throw new TRPCError({ code: 'NOT_FOUND', message: 'Group not found' })
-
-		if (foundGroup.members.some(m => m.userId === this.ctx.user.id))
-			throw new TRPCError({
-				code: 'CONFLICT',
-				message: 'You are already a member of this group',
-			})
-
-		try {
-			const updatedGroup = await this.ctx.prisma.group.update({
-				where: {
-					inviteCode: input.inviteCode,
-				},
-				data: {
-					members: { create: { userId: this.ctx.user.id, role: 'MEMBER' } },
-				},
-				select: {
-					id: true,
-				},
-			})
-
-			return { groupId: updatedGroup.id }
-		} catch (error) {
-			if (error instanceof Error && 'code' in error && error.code === 'P2025')
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Group not found' })
-
-			throw error
-		}
-	}
-
-	async removeMember(input: RemoveMemberInput): Promise<RemoveMemberOutput> {
-		const membership = await this.ctx.prisma.groupMember.findUnique({
-			where: {
-				userId_groupId: {
-					userId: this.ctx.user.id,
-					groupId: input.groupId,
-				},
-			},
-			select: {
-				role: true,
-			},
-		})
-
-		if (!membership)
-			throw new TRPCError({
-				code: 'NOT_FOUND',
-				message: 'Group not found or you are not a member',
-			})
-
-		if (membership.role !== 'ADMIN')
-			throw new TRPCError({
-				code: 'FORBIDDEN',
-				message: 'Only group admins can remove members',
-			})
-
-		try {
-			await this.ctx.prisma.groupMember.delete({
-				where: {
-					userId_groupId: {
-						userId: input.memberId,
-						groupId: input.groupId,
-					},
-				},
-			})
-
-			return { success: true }
-		} catch (error) {
-			if (error instanceof Error && 'code' in error && error.code === 'P2025')
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Member not found' })
-
-			throw error
-		}
-	}
-
-	async updateRole(input: UpdateRoleInput): Promise<UpdateRoleOutput> {
-		const membership = await this.ctx.prisma.groupMember.findUnique({
-			where: {
-				userId_groupId: {
-					userId: this.ctx.user.id,
-					groupId: input.groupId,
-				},
-			},
-			select: {
-				role: true,
-			},
-		})
-
-		if (!membership)
-			throw new TRPCError({
-				code: 'NOT_FOUND',
-				message: 'Group not found or you are not a member',
-			})
-
-		if (membership.role !== 'ADMIN')
-			throw new TRPCError({
-				code: 'FORBIDDEN',
-				message: 'Only group admins can update member roles',
-			})
-
-		try {
-			await this.ctx.prisma.groupMember.update({
-				where: {
-					userId_groupId: {
-						userId: input.memberId,
-						groupId: input.groupId,
-					},
-				},
-				data: {
-					role: input.role,
-				},
-			})
-
-			return { success: true }
-		} catch (error) {
-			if (error instanceof Error && 'code' in error && error.code === 'P2025')
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Member not found' })
-
-			throw error
-		}
-	}
-
-	async leaveGroup(input: LeaveGroupInput): Promise<LeaveGroupOutput> {
-		const foundGroup = await this.ctx.prisma.group.findUnique({
-			where: { id: input.id, members: { some: { userId: this.ctx.user.id } } },
-			select: {
-				id: true,
-				isPersonal: true,
-			},
-		})
-
-		if (!foundGroup)
-			throw new TRPCError({
-				code: 'NOT_FOUND',
-				message: 'Group not found or you are not a member',
-			})
-
-		if (foundGroup.isPersonal)
-			throw new TRPCError({
-				code: 'BAD_REQUEST',
-				message: 'Cannot leave personal group',
-			})
-
-		try {
-			await this.ctx.prisma.groupMember.delete({
-				where: {
-					userId_groupId: { userId: this.ctx.user.id, groupId: input.id },
-				},
-			})
-
-			return { success: true }
-		} catch (error) {
-			if (error instanceof Error && 'code' in error && error.code === 'P2025')
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Group not found' })
+				throw new GroupError('GROUP_NOT_FOUND')
 
 			throw error
 		}
