@@ -1,8 +1,7 @@
 import { AlertCircle, CheckCircle, Loader2, Users } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { SignInModal } from '~/shared/components/auth/sign-in-modal'
-import { SignUpModal } from '~/shared/components/auth/sign-up-modal'
+import { useCurrentUserQuery } from '~/modules/auth/hooks/use-current-user.query'
 import { Button } from '~/shared/components/ui/button'
 import {
 	Card,
@@ -10,9 +9,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from '~/shared/components/ui/card'
-import { useAuthStatus } from '~/shared/hooks/use-auth-status'
-import { useJoinGroupMutation } from '../hooks/use-join-group.mutation'
-import { GroupPreview } from './group-preview'
+import { useJoinGroupMutation } from '../hooks/mutations/use-join-group.mutation'
+import { useValidateInviteCodeQuery } from '../hooks/queries/use-validate-invite-code.query'
+import { GroupPreviewCard } from './group-preview.card'
 
 interface JoinGroupPageProps {
 	code: string
@@ -20,23 +19,17 @@ interface JoinGroupPageProps {
 
 export function JoinGroupPage({ code }: JoinGroupPageProps) {
 	const navigate = useNavigate()
-	const {
-		isAuthenticated,
-		isAnonymous,
-		isLoading: authLoading,
-	} = useAuthStatus()
+	const { data: currentUser } = useCurrentUserQuery()
+	const { data: validationResponse } = useValidateInviteCodeQuery(code)
 	const [showAuthModal, setShowAuthModal] = useState(false)
 	const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
 
+	function handleAuthSuccess() {
+		setShowAuthModal(false)
+	}
+
 	// Join group mutation
 	const joinMutation = useJoinGroupMutation()
-
-	// Handle authentication requirement
-	useEffect(() => {
-		if (!authLoading && !isAuthenticated) {
-			setShowAuthModal(true)
-		}
-	}, [authLoading, isAuthenticated])
 
 	const handleJoinGroup = async () => {
 		try {
@@ -48,31 +41,8 @@ export function JoinGroupPage({ code }: JoinGroupPageProps) {
 		}
 	}
 
-	const handleAuthSuccess = () => {
-		setShowAuthModal(false)
-		// The component will re-render with authenticated state
-	}
-
-	// Loading state while checking auth or validating token
-	if (authLoading) {
-		return (
-			<div className="container mx-auto flex min-h-screen items-center justify-center p-4">
-				<Card className="w-full max-w-md">
-					<CardContent className="flex flex-col items-center gap-4 p-6">
-						<Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-						<p className="text-muted-foreground">
-							{authLoading
-								? 'Checking authentication...'
-								: 'Validating invite...'}
-						</p>
-					</CardContent>
-				</Card>
-			</div>
-		)
-	}
-
 	// Error state for invalid token
-	if (joinMutation.isError) {
+	if (joinMutation.isError || !validationResponse) {
 		return (
 			<div className="container mx-auto flex min-h-screen items-center justify-center p-4">
 				<Card className="w-full max-w-md">
@@ -96,54 +66,7 @@ export function JoinGroupPage({ code }: JoinGroupPageProps) {
 		)
 	}
 
-	// Show authentication modal for anonymous users
-	if (!isAuthenticated || isAnonymous) {
-		return (
-			<>
-				<div className="container mx-auto flex min-h-screen items-center justify-center p-4">
-					<Card className="w-full max-w-md">
-						<CardHeader>
-							<CardTitle className="flex items-center gap-2">
-								<Users className="h-5 w-5" />
-								Join Group
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div className="text-center">
-								<p className="mb-4 text-muted-foreground">
-									You need to sign in to join this group.
-								</p>
-								<Button
-									onClick={() => setShowAuthModal(true)}
-									className="w-full"
-								>
-									Sign In to Join
-								</Button>
-								<div className="mt-2">
-									<button
-										type="button"
-										onClick={() => {
-											setAuthMode('signup')
-											setShowAuthModal(true)
-										}}
-										className="text-primary text-sm hover:underline"
-									>
-										Don't have an account? Sign up
-									</button>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-				</div>
-
-				{authMode === 'signin' ? (
-					<SignInModal isOpen={showAuthModal} onClose={handleAuthSuccess} />
-				) : (
-					<SignUpModal isOpen={showAuthModal} onClose={handleAuthSuccess} />
-				)}
-			</>
-		)
-	}
+	const { group } = validationResponse
 
 	return (
 		<div className="container mx-auto flex min-h-screen items-center justify-center p-4">
@@ -151,15 +74,13 @@ export function JoinGroupPage({ code }: JoinGroupPageProps) {
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
 						<Users className="h-5 w-5" />
-						{groupInfo.isAlreadyMember
-							? "You're Already a Member"
-							: 'Join Group'}
+						{group.isMember ? "You're Already a Member" : 'Join Group'}
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-6">
-					<GroupPreview groupInfo={groupInfo} />
+					<GroupPreviewCard group={group} />
 
-					{groupInfo.isAlreadyMember ? (
+					{group.isMember ? (
 						<div className="space-y-4">
 							<div className="flex items-center gap-2 text-green-600">
 								<CheckCircle className="h-5 w-5" />
@@ -169,8 +90,7 @@ export function JoinGroupPage({ code }: JoinGroupPageProps) {
 							</div>
 							<Button
 								onClick={() => {
-									setActiveGroup(groupInfo.id)
-									navigate('/')
+									navigate(`/groups/${group.id}`)
 								}}
 								className="w-full"
 							>
@@ -200,18 +120,8 @@ export function JoinGroupPage({ code }: JoinGroupPageProps) {
 						</div>
 					)}
 
-					{/* Error message for join operation */}
-					{joinMutation.isError && (
-						<div className="rounded-md border border-destructive/20 bg-destructive/10 p-3">
-							<p className="text-destructive text-sm">
-								{joinMutation.error?.message ||
-									'Failed to join group. Please try again.'}
-							</p>
-						</div>
-					)}
-
 					<div className="text-center">
-						<Button variant="ghost" onClick={() => navigate('/')}>
+						<Button variant="ghost" onClick={() => navigate('/groups')}>
 							Cancel
 						</Button>
 					</div>

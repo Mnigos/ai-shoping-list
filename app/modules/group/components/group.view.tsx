@@ -7,11 +7,11 @@ import { ShoppingList } from '~/modules/shopping-list/components/shopping-list'
 import { Badge } from '~/shared/components/ui/badge'
 import { Button } from '~/shared/components/ui/button'
 
-interface GroupPageProps {
+interface GroupViewProps {
 	groupId: string
 }
 
-export function GroupPage({ groupId }: Readonly<GroupPageProps>) {
+export function GroupView({ groupId }: Readonly<GroupViewProps>) {
 	const trpc = useTRPC()
 
 	const { data: group } = useQuery(

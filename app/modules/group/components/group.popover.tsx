@@ -7,9 +7,9 @@ import {
 	PopoverTrigger,
 } from '~/shared/components/ui/popover'
 import { cn } from '~/shared/utils/cn'
-import { useMyGroupsQuery } from '../hooks/use-my-groups.query'
-import { CreateGroupDialog } from './create-group-dialog'
-import { JoinGroupDialog } from './join-group-dialog'
+import { useMyGroupsQuery } from '../hooks/queries/use-my-groups.query'
+import { CreateGroupDialog } from './create-group.modal'
+import { JoinGroupDialog } from './join-group.modal'
 
 interface GroupSelectorProps {
 	className?: string
@@ -56,6 +56,7 @@ export function GroupSelector({ className }: GroupSelectorProps) {
 						<ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 					</Button>
 				</PopoverTrigger>
+
 				<PopoverContent className="p-1">
 					<div className="flex max-h-[300px] flex-col overflow-auto">
 						<CreateGroupDialog>

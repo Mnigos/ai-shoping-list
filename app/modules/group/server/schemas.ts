@@ -12,6 +12,7 @@ export const Group = GroupOption.extend({
 	description: z.string().nullable(),
 	membersCount: z.number(),
 	myRole: z.enum(GroupRole),
+	createdAt: z.date(),
 })
 export type Group = z.infer<typeof Group>
 
@@ -135,3 +136,15 @@ export const LeaveGroupOutput = z.object({
 	success: z.boolean(),
 })
 export type LeaveGroupOutput = z.infer<typeof LeaveGroupOutput>
+
+export const ValidateInviteCodeInput = z.object({
+	inviteCode: z.string(),
+})
+export type ValidateInviteCodeInput = z.infer<typeof ValidateInviteCodeInput>
+
+export const ValidateInviteCodeOutput = z.object({
+	group: Group.omit({ myRole: true }).extend({
+		isMember: z.boolean(),
+	}),
+})
+export type ValidateInviteCodeOutput = z.infer<typeof ValidateInviteCodeOutput>

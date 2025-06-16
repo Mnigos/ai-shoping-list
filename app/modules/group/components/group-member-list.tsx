@@ -1,6 +1,7 @@
 import type { GroupRole } from '@prisma/client'
 import { ShieldIcon, UserIcon } from 'lucide-react'
 import { useState } from 'react'
+import { useCurrentUserQuery } from '~/modules/auth/hooks/use-current-user.query'
 import { Button } from '~/shared/components/ui/button'
 import {
 	Dialog,
@@ -10,16 +11,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '~/shared/components/ui/dialog'
-import {
-	useRemoveMemberMutation,
-	useUpdateRoleMutation,
-} from '../hooks/use-member-management'
+import { useRemoveMemberMutation } from '../hooks/mutations/use-remove-member.mutation'
+import { useUpdateMemberRoleMutation } from '../hooks/mutations/use-update-member-role.mutation'
 import type { GroupMember } from '../server/schemas'
 
 interface GroupMemberListProps {
 	groupId: string
 	currentUserRole: GroupRole
-	currentUserId: string
 	isPersonalGroup?: boolean
 	members: GroupMember[]
 }
@@ -37,12 +35,12 @@ interface ConfirmDialogState {
 export function GroupMemberList({
 	groupId,
 	currentUserRole,
-	currentUserId,
 	isPersonalGroup = false,
 	members,
 }: GroupMemberListProps) {
 	const removeMemberMutation = useRemoveMemberMutation()
-	const updateRoleMutation = useUpdateRoleMutation()
+	const updateMemberRoleMutation = useUpdateMemberRoleMutation()
+	const { data: currentUser } = useCurrentUserQuery()
 
 	const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
 		isOpen: false,
@@ -82,7 +80,7 @@ export function GroupMemberList({
 				memberId: confirmDialog.member.id,
 			})
 		} else {
-			updateRoleMutation.mutate({
+			updateMemberRoleMutation.mutate({
 				groupId,
 				memberId: confirmDialog.member.id,
 				role: confirmDialog.member.role,
@@ -96,20 +94,19 @@ export function GroupMemberList({
 		setConfirmDialog({ isOpen: false, type: null, member: null })
 	}
 
-	if (!members?.length) {
+	if (!members?.length)
 		return (
 			<div className="py-8 text-center text-muted-foreground">
 				<UserIcon className="mx-auto mb-4 h-12 w-12 opacity-50" />
 				<p>No members found</p>
 			</div>
 		)
-	}
 
 	return (
 		<>
 			<div className="space-y-2">
 				{members.map(member => {
-					const isCurrentUser = member.userId === currentUserId
+					const isCurrentUser = member.userId === currentUser?.id
 					const canManageThisMember = canManageMembers && !isCurrentUser
 
 					return (
@@ -119,17 +116,10 @@ export function GroupMemberList({
 						>
 							{/* Avatar */}
 							<div className="relative">
-								{member.image ? (
-									<img
-										src={member.image}
-										alt={member.name}
-										className="h-10 w-10 rounded-full"
-									/>
-								) : (
-									<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-										<UserIcon className="h-5 w-5 text-muted-foreground" />
-									</div>
-								)}
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+									<UserIcon className="h-5 w-5 text-muted-foreground" />
+								</div>
+
 								{member.role === 'ADMIN' && (
 									<div className="-bottom-1 -right-1 absolute flex h-5 w-5 items-center justify-center rounded-full bg-primary">
 										<ShieldIcon className="h-3 w-3 text-primary-foreground" />
@@ -147,6 +137,7 @@ export function GroupMemberList({
 										)}
 									</p>
 								</div>
+
 								<p className="text-muted-foreground text-xs">
 									{member.role === 'ADMIN' ? 'Admin' : 'Member'} • Joined{' '}
 									{new Date(member.joinedAt).toLocaleDateString()}
@@ -239,7 +230,8 @@ export function GroupMemberList({
 							}
 							onClick={handleConfirmAction}
 							disabled={
-								removeMemberMutation.isPending || updateRoleMutation.isPending
+								removeMemberMutation.isPending ||
+								updateMemberRoleMutation.isPending
 							}
 						>
 							{confirmDialog.type === 'remove' && 'Remove Member'}
