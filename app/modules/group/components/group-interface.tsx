@@ -2,9 +2,9 @@ import { Plus, UserPlus } from 'lucide-react'
 import { AnonymousUserGuard } from '~/shared/components/auth/anonymous-user-guard'
 import { Button } from '~/shared/components/ui/button'
 import { useMyGroupsQuery } from '../hooks/queries/use-my-groups.query'
-import { CreateGroupDialog } from './create-group.modal'
 import { GroupSelector } from './group.popover'
-import { JoinGroupDialog } from './join-group.modal'
+import { CreateGroupDialog } from './modals/create-group.modal'
+import { JoinGroupDialog } from './modals/join-group.modal'
 
 interface GroupInterfaceProps {
 	className?: string

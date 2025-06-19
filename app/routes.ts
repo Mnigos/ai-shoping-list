@@ -6,9 +6,11 @@ export default [
 
 	index('routes/home.route.tsx'),
 
-	route('/join-group/:token', 'routes/join-group.$token.tsx'),
-	route('/invite/:code', 'routes/invite.$code.route.tsx'),
-	route('/groups', 'routes/groups.route.tsx'),
-	route('/groups/:id', 'routes/groups.$id.route.tsx'),
-	route('/groups/:id/settings', 'routes/groups.$id.settings.route.tsx'),
+	route('/invite/:code', 'modules/group/routes/invite.$code.route.tsx'),
+	route('/groups', 'modules/group/routes/groups.route.tsx'),
+	route('/groups/:id', 'modules/group/routes/groups.$id.route.tsx'),
+	route(
+		'/groups/:id/settings',
+		'modules/group/routes/groups.$id.settings.route.tsx',
+	),
 ] satisfies RouteConfig

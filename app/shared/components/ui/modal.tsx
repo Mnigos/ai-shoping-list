@@ -1,5 +1,5 @@
 import { XIcon } from 'lucide-react'
-import type { ComponentProps, PropsWithChildren } from 'react'
+import React, { type ComponentProps, type PropsWithChildren } from 'react'
 import { useMediaQuery } from '~/shared/hooks/use-media-query'
 import { cn } from '~/shared/utils/cn'
 import { Button } from './button'
@@ -47,9 +47,20 @@ export function Modal({
 
 	const onOpenChangeHandler = canClose ? onOpenChange : undefined
 
+	// Extract trigger and content from children
+	let trigger: React.ReactNode = null
+	let content: React.ReactNode = null
+
+	React.Children.forEach(children, child => {
+		if (React.isValidElement(child) && child.type === ModalTrigger)
+			trigger = child
+		else content = child
+	})
+
 	if (isMediumScreen) {
 		return (
 			<Dialog open={open} onOpenChange={onOpenChangeHandler}>
+				{trigger}
 				<DialogContent
 					className={cn('sm:max-w-md', contentClassName)}
 					showCloseButton={canClose}
@@ -71,7 +82,7 @@ export function Modal({
 						</DialogHeader>
 					)}
 
-					<div className={className}>{children}</div>
+					<div className={className}>{content}</div>
 				</DialogContent>
 			</Dialog>
 		)
@@ -79,6 +90,7 @@ export function Modal({
 
 	return (
 		<Drawer open={open} onOpenChange={onOpenChangeHandler}>
+			{trigger}
 			<DrawerContent className={cn('h-full gap-6 p-6', contentClassName)}>
 				{(title || description || canClose) && (
 					<DrawerHeader className="text-center">
@@ -104,7 +116,7 @@ export function Modal({
 						)}
 					</DrawerHeader>
 				)}
-				<div className={className}>{children}</div>
+				<div className={className}>{content}</div>
 			</DrawerContent>
 		</Drawer>
 	)

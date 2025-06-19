@@ -21,7 +21,7 @@ export function Chat({ groupId, className }: Readonly<ChatProps>) {
 	const messagesEndRef = useRef<HTMLDivElement>(null)
 	const messagesContainerRef = useRef<HTMLDivElement>(null)
 	const prevMessagesLengthRef = useRef(0)
-	const messages = useChatStore(state => state.messages)
+	const messages = useChatStore(state => state.getMessages(groupId))
 	const addMessage = useChatStore(state => state.addMessage)
 	const trpc = useTRPC()
 	const queryClient = useQueryClient()
@@ -65,7 +65,7 @@ export function Chat({ groupId, className }: Readonly<ChatProps>) {
 		const prompt = formData.get('prompt') as string
 
 		// 1. Add user message to chat store
-		addMessage({
+		addMessage(groupId, {
 			id: crypto.randomUUID(),
 			content: prompt.trim(),
 			role: 'user',
@@ -76,10 +76,10 @@ export function Chat({ groupId, className }: Readonly<ChatProps>) {
 
 		startTransition(async () => {
 			try {
-				// 2. Get actions from assistant, including recent conversation history
 				const result = await addToShoppingList({
 					prompt,
-					recentMessages: messages.slice(-4), // Send only last 4 messages for context
+					groupId,
+					recentMessages: messages.slice(-4), // Send only last 4 messages with valid dates
 				})
 
 				// 3. Collect actions and assistant message
@@ -123,7 +123,7 @@ export function Chat({ groupId, className }: Readonly<ChatProps>) {
 
 				// 5. Only add assistant message to chat store AFTER successful action execution
 				if (assistantMessage) {
-					addMessage({
+					addMessage(groupId, {
 						id: crypto.randomUUID(),
 						content: assistantMessage,
 						role: 'assistant',
@@ -134,7 +134,7 @@ export function Chat({ groupId, className }: Readonly<ChatProps>) {
 				console.error('Error processing chat message:', error)
 
 				// Add error message to chat
-				addMessage({
+				addMessage(groupId, {
 					id: crypto.randomUUID(),
 					content:
 						'Sorry, I encountered an error processing your request. Please try again.',
