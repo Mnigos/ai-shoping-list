@@ -1,22 +1,17 @@
-import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Settings } from 'lucide-react'
 import { Link } from 'react-router'
-import { useTRPC } from '~/lib/trpc/react'
 import { Chat } from '~/modules/chat/components/chat'
 import { ShoppingList } from '~/modules/shopping-list/components/shopping-list'
 import { Badge } from '~/shared/components/ui/badge'
 import { Button } from '~/shared/components/ui/button'
+import { useGroupQuery } from '../../hooks/queries/use-group.query'
 
-interface GroupViewProps {
+interface GroupPageProps {
 	groupId: string
 }
 
-export function GroupView({ groupId }: Readonly<GroupViewProps>) {
-	const trpc = useTRPC()
-
-	const { data: group } = useQuery(
-		trpc.group.getGroup.queryOptions({ id: groupId }),
-	)
+export function GroupPage({ groupId }: Readonly<GroupPageProps>) {
+	const { data: group } = useGroupQuery(groupId)
 
 	if (!group) {
 		return (
@@ -41,7 +36,6 @@ export function GroupView({ groupId }: Readonly<GroupViewProps>) {
 
 	return (
 		<div className="container mx-auto p-6">
-			{/* Header */}
 			<div className="mb-6 flex items-center gap-4">
 				<Link to="/groups">
 					<Button variant="ghost" size="sm">
@@ -69,7 +63,6 @@ export function GroupView({ groupId }: Readonly<GroupViewProps>) {
 				</div>
 			</div>
 
-			{/* Main Content */}
 			<main className="grid grid-cols-2 gap-8">
 				<ShoppingList groupId={groupId} />
 				<Chat groupId={groupId} />

@@ -1,8 +1,8 @@
 import { type PropsWithChildren, useState } from 'react'
 import { Button } from '~/shared/components/ui/button'
 import { Modal, ModalFooter, ModalTrigger } from '~/shared/components/ui/modal'
-import { useDeleteGroupMutation } from '../hooks/mutations/use-delete-group.mutation'
-import { useGroupIdParam } from '../hooks/use-group-id-param'
+import { useDeleteGroupMutation } from '../../hooks/mutations/use-delete-group.mutation'
+import { useGroupIdParam } from '../../hooks/use-group-id-param'
 
 export function DeleteGroupDialog({ children }: Readonly<PropsWithChildren>) {
 	const [open, setOpen] = useState(false)

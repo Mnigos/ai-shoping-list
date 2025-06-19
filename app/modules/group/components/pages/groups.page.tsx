@@ -1,10 +1,10 @@
 import { ExternalLink, Plus, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '~/shared/components/ui/button'
-import { useMyGroupsOverviewQuery } from '../hooks/queries/use-my-groups-overview.query'
-import { CreateGroupDialog } from './create-group.modal'
-import { GroupCard } from './group.card'
-import { JoinGroupDialog } from './join-group.modal'
+import { useMyGroupsOverviewQuery } from '../../hooks/queries/use-my-groups-overview.query'
+import { GroupCard } from '../group.card'
+import { CreateGroupDialog } from '../modals/create-group.modal'
+import { JoinGroupDialog } from '../modals/join-group.modal'
 
 export function GroupsPage() {
 	const { data: groups } = useMyGroupsOverviewQuery()

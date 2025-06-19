@@ -1,7 +1,7 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 import { getQueryClient } from '~/lib/trpc/react'
 import { createTRPC } from '~/lib/trpc/server'
-import { GroupsPage } from '~/modules/group/components/groups-page'
+import { GroupsPage } from '~/modules/group/components/pages/groups.page'
 import type { Route } from './+types/groups.route'
 
 export function meta() {

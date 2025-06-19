@@ -1,7 +1,7 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 import { getQueryClient } from '~/lib/trpc/react'
 import { createTRPC } from '~/lib/trpc/server'
-import { GroupSettingsView } from '~/modules/group/components/group-settings.view'
+import { GroupSettingsPage } from '~/modules/group/components/pages/group-settings.page'
 import type { Route } from './+types/groups.$id.settings.route'
 
 export function meta({ params }: Route.MetaArgs) {
@@ -38,7 +38,7 @@ export default function GroupSettingsRoute({
 }: Route.ComponentProps) {
 	return (
 		<HydrationBoundary state={queryClient}>
-			<GroupSettingsView groupId={id} />
+			<GroupSettingsPage groupId={id} />
 		</HydrationBoundary>
 	)
 }

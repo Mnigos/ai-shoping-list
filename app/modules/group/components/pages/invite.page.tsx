@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle, Loader2, Users } from 'lucide-react'
-import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { useCurrentUserQuery } from '~/modules/auth/hooks/use-current-user.query'
+import { SignInModal } from '~/shared/components/auth/sign-in.modal'
+import { SignUpModal } from '~/shared/components/auth/sign-up.modal'
 import { Button } from '~/shared/components/ui/button'
 import {
 	Card,
@@ -9,39 +9,41 @@ import {
 	CardHeader,
 	CardTitle,
 } from '~/shared/components/ui/card'
-import { useJoinGroupMutation } from '../hooks/mutations/use-join-group.mutation'
-import { useValidateInviteCodeQuery } from '../hooks/queries/use-validate-invite-code.query'
-import { GroupPreviewCard } from './group-preview.card'
+import { useCanPerformGroupActions } from '~/shared/hooks/use-auth-status'
+import { useJoinGroupMutation } from '../../hooks/mutations/use-join-group.mutation'
+import { useValidateInviteCodeQuery } from '../../hooks/queries/use-validate-invite-code.query'
+import { GroupPreviewCard } from '../group-preview.card'
 
-interface JoinGroupPageProps {
+interface InvitePageProps {
 	code: string
 }
 
-export function JoinGroupPage({ code }: JoinGroupPageProps) {
+export function InvitePage({ code }: Readonly<InvitePageProps>) {
 	const navigate = useNavigate()
-	const { data: currentUser } = useCurrentUserQuery()
+	const canPerformGroupActions = useCanPerformGroupActions()
 	const { data: validationResponse } = useValidateInviteCodeQuery(code)
-	const [showAuthModal, setShowAuthModal] = useState(false)
-	const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
-
-	function handleAuthSuccess() {
-		setShowAuthModal(false)
-	}
-
-	// Join group mutation
 	const joinMutation = useJoinGroupMutation()
 
-	const handleJoinGroup = async () => {
+	// Use current URL as callback so user returns to invite page after auth
+	const currentUrl = typeof window !== 'undefined' ? window.location.href : '/'
+
+	async function handleJoinGroup() {
 		try {
-			// The mutation will handle navigation automatically
 			await joinMutation.mutateAsync({ inviteCode: code })
 		} catch (error) {
 			console.error('Failed to join group:', error)
-			// Error will be handled by the mutation error state
 		}
 	}
 
-	// Error state for invalid token
+	async function handleAuthSuccess() {
+		// After successful auth, automatically join the group
+		try {
+			await joinMutation.mutateAsync({ inviteCode: code })
+		} catch (error) {
+			console.error('Failed to join group after authentication:', error)
+		}
+	}
+
 	if (joinMutation.isError || !validationResponse) {
 		return (
 			<div className="container mx-auto flex min-h-screen items-center justify-center p-4">
@@ -103,20 +105,45 @@ export function JoinGroupPage({ code }: JoinGroupPageProps) {
 								You'll be able to view and edit the shared shopping list with
 								other group members.
 							</p>
-							<Button
-								onClick={handleJoinGroup}
-								disabled={joinMutation.isPending}
-								className="w-full"
-							>
-								{joinMutation.isPending ? (
-									<>
-										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Joining...
-									</>
-								) : (
-									'Join Group'
-								)}
-							</Button>
+
+							{canPerformGroupActions ? (
+								<Button
+									onClick={handleJoinGroup}
+									disabled={joinMutation.isPending}
+									className="w-full"
+								>
+									{joinMutation.isPending ? (
+										<>
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+											Joining...
+										</>
+									) : (
+										'Join Group'
+									)}
+								</Button>
+							) : (
+								<div className="space-y-3">
+									<p className="text-center text-muted-foreground text-sm">
+										Please sign in or create an account to join this group
+									</p>
+									<div className="flex gap-2">
+										<SignInModal
+											onSuccess={handleAuthSuccess}
+											callbackURL={currentUrl}
+										>
+											<Button variant="outline" className="flex-1">
+												Sign In
+											</Button>
+										</SignInModal>
+										<SignUpModal
+											onSuccess={handleAuthSuccess}
+											callbackURL={currentUrl}
+										>
+											<Button className="flex-1">Sign Up</Button>
+										</SignUpModal>
+									</div>
+								</div>
+							)}
 						</div>
 					)}
 

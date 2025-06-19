@@ -47,7 +47,7 @@ export const assistantBasePrompt = `
 
 interface AssistantPromptFactoryParams {
 	currentItems: ShoppingListItem[]
-	recentMessages: Message[]
+	recentMessages: Message[] | undefined
 	prompt: string
 }
 
@@ -67,7 +67,7 @@ export const assistantPromptFactory = ({
 			: '\n\nCurrent shopping list is empty.'
 
 	const conversationHistory =
-		recentMessages.length > 0
+		recentMessages && recentMessages.length > 0
 			? `\n\nRecent conversation:\n${recentMessages
 					.map(
 						msg =>

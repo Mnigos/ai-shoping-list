@@ -4,11 +4,11 @@ import { Button } from '~/shared/components/ui/button'
 import { Input } from '~/shared/components/ui/input'
 import { Label } from '~/shared/components/ui/label'
 import { Modal, ModalFooter, ModalTrigger } from '~/shared/components/ui/modal'
-import { useRegenerateInviteCodeMutation } from '../hooks/mutations/use-regenerate-invite-code.mutation'
-import { useGroupDetailsQuery } from '../hooks/queries/use-group-details.query'
-import { useGroupIdParam } from '../hooks/use-group-id-param'
+import { useRegenerateInviteCodeMutation } from '../../hooks/mutations/use-regenerate-invite-code.mutation'
+import { useGroupDetailsQuery } from '../../hooks/queries/use-group-details.query'
+import { useGroupIdParam } from '../../hooks/use-group-id-param'
 
-export function InviteLinkDialog({ children }: Readonly<PropsWithChildren>) {
+export function InviteLinkModal({ children }: Readonly<PropsWithChildren>) {
 	const [open, setOpen] = useState(false)
 	const [isCopied, setIsCopied] = useState(false)
 	const groupId = useGroupIdParam()
@@ -16,9 +16,10 @@ export function InviteLinkDialog({ children }: Readonly<PropsWithChildren>) {
 	const regenerateInviteCodeMutation = useRegenerateInviteCodeMutation()
 
 	const inviteCode = group?.inviteCode
-	const inviteLink = inviteCode
-		? `${window.location.origin}/invite/${inviteCode}`
-		: ''
+	const inviteLink =
+		inviteCode && typeof window !== 'undefined'
+			? `${window.location.origin}/invite/${inviteCode}`
+			: ''
 
 	async function copyToClipboard(text: string) {
 		try {

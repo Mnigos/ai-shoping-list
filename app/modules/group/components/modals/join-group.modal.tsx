@@ -5,7 +5,7 @@ import { Button } from '~/shared/components/ui/button'
 import { useAppForm } from '~/shared/components/ui/form'
 import { Input } from '~/shared/components/ui/input'
 import { Modal, ModalFooter, ModalTrigger } from '~/shared/components/ui/modal'
-import { useJoinGroupMutation } from '../hooks/mutations/use-join-group.mutation'
+import { useJoinGroupMutation } from '../../hooks/mutations/use-join-group.mutation'
 
 interface JoinGroupDialogProps extends PropsWithChildren {
 	onGroupJoined?: (groupId: string) => void

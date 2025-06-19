@@ -54,9 +54,11 @@ export class GroupService {
 				name: true,
 				description: true,
 				isPersonal: true,
+				createdAt: true,
 				members: {
 					select: {
 						role: true,
+						userId: true,
 						user: {
 							select: {
 								id: true,
@@ -68,12 +70,13 @@ export class GroupService {
 		})
 
 		return foundGroups.map(({ members, ...group }) => {
-			const myRole = members.find(m => m.user.id === this.ctx.user.id)?.role
+			const myRole = members.find(m => m.userId === this.ctx.user.id)?.role
 
 			if (!myRole) throw new GroupError('NOT_GROUP_MEMBER')
 
 			return {
 				...group,
+				createdAt: group.createdAt,
 				membersCount: members.length,
 				myRole,
 			}
@@ -88,9 +91,11 @@ export class GroupService {
 				name: true,
 				description: true,
 				isPersonal: true,
+				createdAt: true,
 				members: {
 					select: {
 						role: true,
+						userId: true,
 						user: {
 							select: {
 								id: true,
@@ -102,7 +107,7 @@ export class GroupService {
 		})
 
 		const myRole = foundGroup?.members.find(
-			m => m.user.id === this.ctx.user.id,
+			m => m.userId === this.ctx.user.id,
 		)?.role
 
 		if (!foundGroup || !myRole)
@@ -110,6 +115,7 @@ export class GroupService {
 
 		return {
 			...foundGroup,
+			createdAt: foundGroup.createdAt,
 			membersCount: foundGroup.members.length,
 			myRole,
 		}
@@ -129,6 +135,7 @@ export class GroupService {
 					select: {
 						role: true,
 						joinedAt: true,
+						userId: true,
 						user: {
 							select: {
 								id: true,
@@ -142,26 +149,27 @@ export class GroupService {
 		})
 
 		const myRole = foundGroup?.members.find(
-			m => m.user.id === this.ctx.user.id,
+			m => m.userId === this.ctx.user.id,
 		)?.role
 
 		if (!foundGroup || !myRole)
 			throw new GroupError('GROUP_NOT_FOUND_OR_NOT_MEMBER')
 
-		console.log('members', foundGroup.members)
+		// Map all members, using available user data or fallback
+		const members = foundGroup.members.map(m => ({
+			role: m.role,
+			name: m.user?.name ?? 'Unknown User',
+			joinedAt: m.joinedAt,
+			userId: m.userId,
+			image: m.user?.image ?? undefined,
+		}))
 
 		return {
 			...foundGroup,
 			inviteCode: myRole === 'ADMIN' ? foundGroup.inviteCode! : undefined,
-			membersCount: foundGroup.members.length,
+			membersCount: members.length,
 			myRole,
-			members: foundGroup.members.map(m => ({
-				role: m.role,
-				name: m.user.name,
-				joinedAt: m.joinedAt,
-				userId: m.user.id,
-				image: m.user.image ?? undefined,
-			})),
+			members,
 		}
 	}
 
@@ -187,6 +195,7 @@ export class GroupService {
 					name: true,
 					description: true,
 					isPersonal: true,
+					createdAt: true,
 					members: {
 						select: {
 							role: true,
@@ -201,13 +210,14 @@ export class GroupService {
 			})
 
 			const myRole = createdGroup.members.find(
-				m => m.user.id === this.ctx.user.id,
+				m => m.user?.id === this.ctx.user.id,
 			)?.role
 
 			if (!myRole) throw new GroupError('GROUP_CREATION_FAILED')
 
 			return {
 				...createdGroup,
+				createdAt: createdGroup.createdAt,
 				membersCount: createdGroup.members.length,
 				myRole,
 			}
@@ -253,6 +263,7 @@ export class GroupService {
 					name: true,
 					description: true,
 					isPersonal: true,
+					createdAt: true,
 					members: {
 						select: {
 							role: true,
@@ -268,6 +279,7 @@ export class GroupService {
 
 			return {
 				...updatedGroup,
+				createdAt: updatedGroup.createdAt,
 				membersCount: updatedGroup.members.length,
 				myRole: membership.role,
 			}

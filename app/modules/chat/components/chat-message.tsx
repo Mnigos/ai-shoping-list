@@ -19,19 +19,21 @@ export function ChatMessage({ message }: Readonly<ChatMessageProps>) {
 				)}
 			>
 				<p className="whitespace-pre-wrap">{message.content}</p>
-				<time
-					dateTime={message.createdAt.toISOString()}
-					className={cn(
-						'mt-1 block text-xs opacity-70',
-						isAssistant ? 'text-muted-foreground' : 'text-primary-foreground',
-					)}
-					aria-label={`Message sent at ${message.createdAt.toLocaleTimeString()}`}
-				>
-					{message.createdAt.toLocaleTimeString([], {
-						hour: '2-digit',
-						minute: '2-digit',
-					})}
-				</time>
+				{message.createdAt && (
+					<time
+						dateTime={message.createdAt.toISOString()}
+						className={cn(
+							'mt-1 block text-xs opacity-70',
+							isAssistant ? 'text-muted-foreground' : 'text-primary-foreground',
+						)}
+						aria-label={`Message sent at ${message.createdAt.toLocaleTimeString()}`}
+					>
+						{message.createdAt.toLocaleTimeString([], {
+							hour: '2-digit',
+							minute: '2-digit',
+						})}
+					</time>
+				)}
 			</div>
 		</div>
 	)

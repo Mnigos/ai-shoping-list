@@ -20,20 +20,20 @@ import {
 } from '~/shared/components/ui/card'
 import { Input } from '~/shared/components/ui/input'
 import { Label } from '~/shared/components/ui/label'
-import { useRegenerateInviteCodeMutation } from '../hooks/mutations/use-regenerate-invite-code.mutation'
-import { useGroupDetailsQuery } from '../hooks/queries/use-group-details.query'
-import { DeleteGroupDialog } from './delete-group.modal'
-import { EditGroupDialog } from './edit-group.modal'
-import { GroupMemberList } from './group-member-list'
-import { InviteLinkDialog } from './invite-link.modal'
+import { useRegenerateInviteCodeMutation } from '../../hooks/mutations/use-regenerate-invite-code.mutation'
+import { useGroupDetailsQuery } from '../../hooks/queries/use-group-details.query'
+import { GroupMemberList } from '../group-member-list'
+import { DeleteGroupDialog } from '../modals/delete-group.modal'
+import { EditGroupDialog } from '../modals/edit-group.modal'
+import { InviteLinkModal } from '../modals/invite-link.modal'
 
-interface GroupSettingsViewProps {
+interface GroupSettingsPageProps {
 	groupId: string
 }
 
-export function GroupSettingsView({
+export function GroupSettingsPage({
 	groupId,
-}: Readonly<GroupSettingsViewProps>) {
+}: Readonly<GroupSettingsPageProps>) {
 	const { data: group } = useGroupDetailsQuery(groupId)
 
 	const regenerateCodeMutation = useRegenerateInviteCodeMutation()
@@ -189,12 +189,12 @@ export function GroupSettingsView({
 										? 'Generating...'
 										: 'Generate New Code'}
 								</Button>
-								<InviteLinkDialog>
+								<InviteLinkModal>
 									<Button variant="outline" size="sm">
 										<LinkIcon className="mr-2 h-4 w-4" />
 										Create Invite Link
 									</Button>
-								</InviteLinkDialog>
+								</InviteLinkModal>
 							</div>
 						</CardContent>
 					</Card>

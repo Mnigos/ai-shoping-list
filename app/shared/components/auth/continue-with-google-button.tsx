@@ -7,11 +7,13 @@ import { Button } from '../ui/button'
 interface ContinueWithGoogleButtonProps {
 	setError: (error: string) => void
 	onSuccess?: () => void
+	callbackURL?: string
 }
 
 export function ContinueWithGoogleButton({
 	setError,
 	onSuccess,
+	callbackURL = '/',
 }: Readonly<ContinueWithGoogleButtonProps>) {
 	const [isLoading, startTransition] = useTransition()
 
@@ -21,7 +23,7 @@ export function ContinueWithGoogleButton({
 			await authClient.signIn.social(
 				{
 					provider: 'google',
-					callbackURL: '/',
+					callbackURL,
 				},
 				{
 					onSuccess: () => {

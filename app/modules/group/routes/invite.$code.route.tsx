@@ -1,7 +1,7 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 import { getQueryClient } from '~/lib/trpc/react'
 import { createTRPC } from '~/lib/trpc/server'
-import { JoinGroupPage } from '~/modules/group/components/join-group-page'
+import { InvitePage } from '~/modules/group/components/pages/invite.page'
 import type { Route } from './+types/invite.$code.route'
 
 export async function loader(loaderArgs: Route.LoaderArgs) {
@@ -24,7 +24,7 @@ export default function InviteRoute({
 }: Route.ComponentProps) {
 	return (
 		<HydrationBoundary state={queryClient}>
-			<JoinGroupPage code={code} />
+			<InvitePage code={code} />
 		</HydrationBoundary>
 	)
 }

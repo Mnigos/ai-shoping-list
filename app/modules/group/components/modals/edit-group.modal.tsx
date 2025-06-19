@@ -1,42 +1,52 @@
-import { type PropsWithChildren, useState, useTransition } from 'react'
+import { useTransition } from 'react'
+import { type PropsWithChildren, useState } from 'react'
 import { z } from 'zod'
 import { Button } from '~/shared/components/ui/button'
 import { useAppForm } from '~/shared/components/ui/form'
 import { Input } from '~/shared/components/ui/input'
 import { Modal, ModalFooter, ModalTrigger } from '~/shared/components/ui/modal'
 import { Textarea } from '~/shared/components/ui/textarea'
-import { useCreateGroupMutation } from '../hooks/mutations/use-create-group.mutation'
+import { useUpdateGroupMutation } from '../../hooks/mutations/use-update-group.mutation'
+import { useGroupDetailsQuery } from '../../hooks/queries/use-group-details.query'
+import { useGroupIdParam } from '../../hooks/use-group-id-param'
 
-interface CreateGroupDialogProps extends PropsWithChildren {
-	onGroupCreated?: (group: { id: string; name: string }) => void
-}
-
-export function CreateGroupDialog({
-	children,
-	onGroupCreated,
-}: Readonly<CreateGroupDialogProps>) {
+export function EditGroupDialog({ children }: Readonly<PropsWithChildren>) {
 	const [open, setOpen] = useState(false)
 	const [isLoading, startTransition] = useTransition()
-	const createGroupMutation = useCreateGroupMutation()
+	const updateGroupMutation = useUpdateGroupMutation()
+	const groupId = useGroupIdParam()
+	const { data: group } = useGroupDetailsQuery(groupId)
 
 	const form = useAppForm({
 		defaultValues: {
-			name: '',
-			description: '',
+			name: group?.name ?? '',
+			description: group?.description ?? '',
 		},
-		onSubmit: async ({ value }) => {
-			createGroupMutation.mutate(value, {
-				onSuccess: group => {
-					setOpen(false)
-					onGroupCreated?.(group)
+		onSubmit: async ({ value: { name, description } }) => {
+			updateGroupMutation.mutate(
+				{
+					id: groupId,
+					name,
+					description,
 				},
-			})
+				{
+					onSuccess: () => {
+						setOpen(false)
+					},
+				},
+			)
 		},
 	})
+
+	if (group && open) {
+		form.setFieldValue('name', group.name)
+		form.setFieldValue('description', group.description ?? '')
+	}
 
 	function handleSubmit(event: React.FormEvent) {
 		event.preventDefault()
 		event.stopPropagation()
+
 		startTransition(async () => {
 			await form.handleSubmit()
 		})
@@ -46,8 +56,8 @@ export function CreateGroupDialog({
 		<Modal
 			open={open}
 			onOpenChange={setOpen}
-			title="Create New Group"
-			description="Create a group to share shopping lists with family and friends."
+			title="Edit Group"
+			description="Update group information and settings"
 		>
 			<ModalTrigger>{children}</ModalTrigger>
 
@@ -58,8 +68,10 @@ export function CreateGroupDialog({
 						validators={{
 							onBlur: z
 								.string()
-								.min(1, 'Name is required')
-								.max(50, 'Name must be 50 characters or less'),
+								.min(1, { message: 'Group name is required' })
+								.max(50, {
+									message: 'Group name must be 50 characters or less',
+								}),
 						}}
 					>
 						{field => (
@@ -67,8 +79,6 @@ export function CreateGroupDialog({
 								<field.FormLabel>Group Name</field.FormLabel>
 								<field.FormControl>
 									<Input
-										type="text"
-										placeholder="e.g., Family, Roommates, Work Team"
 										value={field.state.value}
 										onChange={({ target }) => field.handleChange(target.value)}
 										onBlur={field.handleBlur}
@@ -83,9 +93,9 @@ export function CreateGroupDialog({
 					<form.AppField
 						name="description"
 						validators={{
-							onBlur: z
-								.string()
-								.max(200, 'Description must be 200 characters or less'),
+							onBlur: z.string().max(200, {
+								message: 'Description must be 200 characters or less',
+							}),
 						}}
 					>
 						{field => (
@@ -93,7 +103,6 @@ export function CreateGroupDialog({
 								<field.FormLabel>Description (Optional)</field.FormLabel>
 								<field.FormControl>
 									<Textarea
-										placeholder="What's this group for?"
 										value={field.state.value}
 										onChange={({ target }) => field.handleChange(target.value)}
 										onBlur={field.handleBlur}
@@ -105,27 +114,26 @@ export function CreateGroupDialog({
 							</field.FormItem>
 						)}
 					</form.AppField>
-
-					<ModalFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => setOpen(false)}
-							disabled={isLoading || createGroupMutation.isPending}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							disabled={isLoading || createGroupMutation.isPending}
-						>
-							{isLoading || createGroupMutation.isPending
-								? 'Creating...'
-								: 'Create Group'}
-						</Button>
-					</ModalFooter>
 				</form>
 			</form.AppForm>
+
+			<ModalFooter>
+				<Button
+					variant="outline"
+					onClick={() => setOpen(false)}
+					disabled={isLoading || updateGroupMutation.isPending}
+				>
+					Cancel
+				</Button>
+				<Button
+					onClick={handleSubmit}
+					disabled={isLoading || updateGroupMutation.isPending}
+				>
+					{isLoading || updateGroupMutation.isPending
+						? 'Updating...'
+						: 'Update Group'}
+				</Button>
+			</ModalFooter>
 		</Modal>
 	)
 }

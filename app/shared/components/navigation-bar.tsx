@@ -1,9 +1,8 @@
 import type { ComponentProps } from 'react'
-import { useState } from 'react'
 import { GroupInterface } from '~/modules/group/components/group-interface'
 import { cn } from '~/shared/utils/cn'
-import { SignInModal } from './auth/sign-in-modal'
-import { SignUpModal } from './auth/sign-up-modal'
+import { SignInModal } from './auth/sign-in.modal'
+import { SignUpModal } from './auth/sign-up.modal'
 import {
 	NavigationBarUserPopover,
 	type NavigationBarUserPopoverProps,
@@ -19,56 +18,39 @@ export function NavigationBar({
 	user,
 	...props
 }: Readonly<NavigationBarProps>) {
-	const [showSignInModal, setShowSignInModal] = useState(false)
-	const [showSignUpModal, setShowSignUpModal] = useState(false)
-
 	return (
-		<>
-			<nav
-				className={cn(
-					'sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60',
-					className,
-				)}
-				{...props}
-			>
-				<div className="container mx-auto flex h-16 items-center justify-between px-4">
-					<header className="flex items-center space-x-2">
-						<h1 className="font-bold text-xl">AI Shopping List</h1>
-					</header>
+		<nav
+			className={cn(
+				'sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60',
+				className,
+			)}
+			{...props}
+		>
+			<div className="container mx-auto flex h-16 items-center justify-between px-4">
+				<header className="flex items-center space-x-2">
+					<h1 className="font-bold text-xl">AI Shopping List</h1>
+				</header>
 
-					<div className="flex items-center space-x-4">
-						{/* Group interface - shows for authenticated users */}
-						{user && !user.isAnonymous && <GroupInterface />}
-
-						{user && !user.isAnonymous ? (
+				<div className="flex items-center space-x-4">
+					{user && !user.isAnonymous ? (
+						<>
+							<GroupInterface />
 							<NavigationBarUserPopover user={user} />
-						) : (
-							<>
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={() => setShowSignInModal(true)}
-								>
+						</>
+					) : (
+						<>
+							<SignInModal>
+								<Button variant="ghost" size="sm">
 									Sign In
 								</Button>
-								<Button size="sm" onClick={() => setShowSignUpModal(true)}>
-									Sign Up
-								</Button>
-							</>
-						)}
-					</div>
+							</SignInModal>
+							<SignUpModal>
+								<Button size="sm">Sign Up</Button>
+							</SignUpModal>
+						</>
+					)}
 				</div>
-			</nav>
-
-			<SignInModal
-				onClose={() => setShowSignInModal(false)}
-				isOpen={showSignInModal}
-			/>
-
-			<SignUpModal
-				onClose={() => setShowSignUpModal(false)}
-				isOpen={showSignUpModal}
-			/>
-		</>
+			</div>
+		</nav>
 	)
 }

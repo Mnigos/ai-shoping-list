@@ -8,8 +8,8 @@ import {
 } from '~/shared/components/ui/popover'
 import { cn } from '~/shared/utils/cn'
 import { useMyGroupsQuery } from '../hooks/queries/use-my-groups.query'
-import { CreateGroupDialog } from './create-group.modal'
-import { JoinGroupDialog } from './join-group.modal'
+import { CreateGroupDialog } from './modals/create-group.modal'
+import { JoinGroupDialog } from './modals/join-group.modal'
 
 interface GroupSelectorProps {
 	className?: string

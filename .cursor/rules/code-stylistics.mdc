@@ -1,6 +1,6 @@
 ---
 description: 
-globs: *.ts
+globs: *.ts,*.tsx
 alwaysApply: false
 ---
 # Code Style Guidelines
@@ -108,6 +108,7 @@ function addItem(item: ShoppingItem): void {
 - **Consistent Formatting:** Follow project's Prettier/ESLint configuration
 - **Logical Grouping:** Group related functionality together
 - **Early Returns:** Use early returns to reduce nesting
+- **Minimal Braces:** Remove unnecessary braces from single-statement blocks (if-else, for, while, etc.)
 
 ```typescript
 // ✅ DO: Early returns and clear structure
@@ -143,6 +144,48 @@ function processShoppingList(items: ShoppingItem[]): ProcessedList {
     }
   } else {
     return { items: [], total: 0, isEmpty: true }
+  }
+}
+
+// ✅ DO: Remove unnecessary braces for single statements
+function processItems(items: ShoppingItem[]): void {
+  // If-else statements
+  if (items.length > 0)
+    processValidItems(items)
+  else
+    showEmptyMessage()
+
+  // For loops
+  for (const item of items)
+    validateItem(item)
+
+  // While loops
+  let index = 0
+  while (index < items.length)
+    processItem(items[index++])
+
+  // Ternary for simple cases
+  const status = items.length > 0 ? 'active' : 'empty'
+}
+
+// ❌ DON'T: Unnecessary braces for single statements
+function processItems(items: ShoppingItem[]): void {
+  // Unnecessary braces in if-else
+  if (items.length > 0) {
+    processValidItems(items)
+  } else {
+    showEmptyMessage()
+  }
+
+  // Unnecessary braces in for loop
+  for (const item of items) {
+    validateItem(item)
+  }
+
+  // Unnecessary braces in while loop
+  let index = 0
+  while (index < items.length) {
+    processItem(items[index++])
   }
 }
 ```

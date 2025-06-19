@@ -1,7 +1,7 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query'
 import { getQueryClient } from '~/lib/trpc/react'
 import { createTRPC } from '~/lib/trpc/server'
-import { GroupView } from '~/modules/group/components/group.view'
+import { GroupPage } from '~/modules/group/components/pages/group.page'
 import type { Route } from './+types/groups.$id.route'
 
 export function meta({ params }: Route.MetaArgs) {
@@ -19,7 +19,6 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 	const trpc = await createTRPC(loaderArgs)
 	const { id } = loaderArgs.params
 
-	// Prefetch group details and shopping list items
 	try {
 		await Promise.all([
 			queryClient.prefetchQuery(trpc.group.getGroup.queryOptions({ id })),
@@ -28,7 +27,6 @@ export async function loader(loaderArgs: Route.LoaderArgs) {
 			),
 		])
 	} catch (error) {
-		// If prefetch fails, we'll handle it in the component
 		console.warn('Failed to prefetch group data:', error)
 	}
 
@@ -43,7 +41,7 @@ export default function GroupRoute({
 }: Route.ComponentProps) {
 	return (
 		<HydrationBoundary state={queryClient}>
-			<GroupView groupId={id} />
+			<GroupPage groupId={id} />
 		</HydrationBoundary>
 	)
 }
